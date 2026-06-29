@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Study Buddy - Planner</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.5;
+      color: #0f172a;
+      background: #f7f9fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f7f9fc;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    nav a {
+      text-decoration: none;
+      color: #0f172a;
+      background: #fff;
+      border: 1px solid #dbe3ef;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+    }
+    nav a.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    .page-title {
+      margin: 0 0 12px;
+      font-size: 1.6rem;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 18px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font: inherit;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .planner-list {
+      max-height: 480px;
+      overflow: auto;
+      margin-top: 10px;
+    }
+    .event {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #eef2f7;
+    }
+    .small { color: #4b5563; font-size: 0.95rem; }
+    .share-link {
+      word-break: break-all;
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Study Buddy</h1>
+      <nav>
+        <a href="StuddyBuddyHTML.html">Home</a>
+        <a href="StuddyBuddyQuiz.html">Quiz</a>
+        <a class="active" href="StuddyBuddyPlanner.html">Planner</a>
+      </nav>
+    </header>
+
+    <h2 class="page-title">Planner</h2>
+    <div class="layout">
+      <section class="card">
+        <h3>Add Event</h3>
+        <form id="plannerForm">
+          <label for="eventDate">Date</label>
+          <input id="eventDate" type="date" required>
+
+          <label for="eventTitle">Title</label>
+          <input id="eventTitle" placeholder="e.g., Quiz: Biology Basics" required>
+
+          <label for="eventNotes">Notes (optional)</label>
+          <textarea id="eventNotes" rows="4" placeholder="Add study goals or reminders"></textarea>
+
+          <button type="submit">Add to Planner</button>
+        </form>
+      </section>
+
+      <aside class="card">
+        <h3>Upcoming Events</h3>
+        <div class="planner-list" id="plannerList">
+          <div class="small">No events yet.</div>
+        </div>
+        <div style="margin-top: 12px; display: grid; gap: 8px;">
+          <button id="exportPlanner" class="secondary">Export Events (JSON)</button>
+          <button id="sharePlanner" class="secondary">Create Planner Link</button>
+          <div id="plannerShare" class="share-link"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const plannerForm = document.getElementById('plannerForm');
+    const plannerList = document.getElementById('plannerList');
+    const exportPlanner = document.getElementById('exportPlanner');
+    const sharePlanner = document.getElementById('sharePlanner');
+    const plannerShare = document.getElementById('plannerShare');
+    let events = [];
+
+    plannerForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const date = document.getElementById('eventDate').value;
+      const title = document.getElementById('eventTitle').value;
+      const notes = document.getElementById('eventNotes').value;
+      const ev = { id: Date.now(), date, title, notes };
+      events.push(ev);
+      renderEvents();
+      plannerForm.reset();
+    });
+
+    function renderEvents() {
+      plannerList.innerHTML = '';
+      if (events.length === 0) {
+        plannerList.innerHTML = '<div class="small">No events yet.</div>';
+        return;
+      }
+      events.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach((ev) => {
+        const div = document.createElement('div');
+        div.className = 'event';
+        div.innerHTML = `
+          <div>
+            <strong>${escapeHtml(ev.title)}</strong>
+            <div class="small">${escapeHtml(ev.date)}${ev.notes ? ' — ' + escapeHtml(ev.notes) : ''}</div>
+          </div>
+          <div class="small">#${ev.id}</div>
+        `;
+        plannerList.appendChild(div);
+      });
+    }
+
+    exportPlanner.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(events, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'planner-events.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    sharePlanner.addEventListener('click', () => {
+      const data = btoa(unescape(encodeURIComponent(JSON.stringify(events))));
+      const link = location.origin + location.pathname + '#planner=' + data;
+      plannerShare.style.display = 'block';
+      plannerShare.textContent = link;
+    });
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c]));
+    }
+
+    window.addEventListener('load', () => {
+      const hash = location.hash.substring(1);
+      if (!hash || !hash.startsWith('planner=')) return;
+      try {
+        events = JSON.parse(decodeURIComponent(escape(atob(hash.slice(8)))));
+        renderEvents();
+      } catch (e) {
+        console.warn('Invalid shared planner data');
+      }
+    });
+  </script>
+</body>
+</html>

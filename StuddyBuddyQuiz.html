@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Study Buddy - Quiz</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.5;
+      color: #0f172a;
+      background: #f7f9fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f7f9fc;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    nav a {
+      text-decoration: none;
+      color: #0f172a;
+      background: #fff;
+      border: 1px solid #dbe3ef;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+    }
+    nav a.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    .page-title {
+      margin: 0 0 12px;
+      font-size: 1.6rem;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 18px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font: inherit;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .preview {
+      max-height: 420px;
+      overflow: auto;
+      margin-top: 12px;
+      background: #f8fafc;
+    }
+    .small { color: #4b5563; font-size: 0.95rem; }
+    .share-link {
+      word-break: break-all;
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Study Buddy</h1>
+      <nav>
+        <a href="StuddyBuddyHTML.html">Home</a>
+        <a class="active" href="StuddyBuddyQuiz.html">Quiz</a>
+        <a href="StuddyBuddyPlanner.html">Planner</a>
+      </nav>
+    </header>
+
+    <h2 class="page-title">Quiz Generator</h2>
+    <div class="layout">
+      <section class="card">
+        <h3>Create a Quiz</h3>
+        <form id="quizForm">
+          <label for="title">Quiz Title</label>
+          <input id="title" name="title" placeholder="e.g., Biology Basics" required>
+
+          <label for="topic">Topic / Instructions</label>
+          <input id="topic" name="topic" placeholder="e.g., Intro to cells or ask for multiple choice">
+
+          <label for="qcount">Number of Questions</label>
+          <input id="qcount" name="qcount" type="number" min="1" max="50" value="5">
+
+          <label for="type">Question Type</label>
+          <select id="type" name="type">
+            <option value="multiple">Multiple Choice</option>
+            <option value="short">Short Answer</option>
+            <option value="truefalse">True / False</option>
+          </select>
+
+          <label for="difficulty">Difficulty</label>
+          <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+
+          <button type="submit">Generate Quiz</button>
+        </form>
+      </section>
+
+      <aside class="card">
+        <h3>Preview</h3>
+        <div id="questionsContainer" class="small preview">No quiz generated yet.</div>
+        <div style="margin-top: 12px; display: grid; gap: 8px;">
+          <button id="downloadQuiz" class="secondary">Download JSON</button>
+          <button id="shareQuiz" class="secondary">Create Share Link</button>
+          <div id="shareOutput" class="share-link"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const quizForm = document.getElementById('quizForm');
+    const questionsContainer = document.getElementById('questionsContainer');
+    const downloadQuiz = document.getElementById('downloadQuiz');
+    const shareQuiz = document.getElementById('shareQuiz');
+    const shareOutput = document.getElementById('shareOutput');
+    let lastQuiz = null;
+
+    quizForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value || 'Untitled Quiz';
+      const topic = document.getElementById('topic').value || '';
+      const count = parseInt(document.getElementById('qcount').value, 10) || 5;
+      const type = document.getElementById('type').value;
+      const difficulty = document.getElementById('difficulty').value;
+
+      const questions = [];
+      for (let i = 1; i <= count; i++) {
+        if (type === 'multiple') {
+          questions.push({
+            id: i,
+            type: 'multiple',
+            question: `${title} - Q${i}: ${topic || 'Sample question text'}`,
+            options: ['A', 'B', 'C', 'D'],
+            answer: 'A'
+          });
+        } else if (type === 'truefalse') {
+          questions.push({
+            id: i,
+            type: 'truefalse',
+            question: `${title} - Q${i}: ${topic || 'Sample statement'}`,
+            answer: true
+          });
+        } else {
+          questions.push({
+            id: i,
+            type: 'short',
+            question: `${title} - Q${i}: ${topic || 'Prompt'}`,
+            answer: ''
+          });
+        }
+      }
+
+      lastQuiz = { title, topic, difficulty, type, questions, generatedAt: new Date().toISOString() };
+      renderQuiz(lastQuiz);
+    });
+
+    function renderQuiz(quiz) {
+      questionsContainer.innerHTML = '';
+      const header = document.createElement('div');
+      header.innerHTML = `<strong>${escapeHtml(quiz.title)}</strong> — ${escapeHtml(quiz.topic || 'No topic provided')}`;
+      questionsContainer.appendChild(header);
+      quiz.questions.forEach((q) => {
+        const row = document.createElement('div');
+        row.style.padding = '6px 0';
+        row.textContent = `${q.id}. ${q.question}`;
+        questionsContainer.appendChild(row);
+      });
+    }
+
+    downloadQuiz.addEventListener('click', () => {
+      if (!lastQuiz) return alert('Generate a quiz first');
+      const blob = new Blob([JSON.stringify(lastQuiz, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(lastQuiz.title || 'quiz')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    shareQuiz.addEventListener('click', () => {
+      if (!lastQuiz) return alert('Generate a quiz first');
+      const data = btoa(unescape(encodeURIComponent(JSON.stringify(lastQuiz))));
+      const link = location.origin + location.pathname + '#quiz=' + data;
+      shareOutput.style.display = 'block';
+      shareOutput.textContent = link;
+    });
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c]));
+    }
+
+    window.addEventListener('load', () => {
+      const hash = location.hash.substring(1);
+      if (!hash || !hash.startsWith('quiz=')) return;
+      try {
+        const q = JSON.parse(decodeURIComponent(escape(atob(hash.slice(5)))));
+        lastQuiz = q;
+        renderQuiz(q);
+      } catch (e) {
+        console.warn('Invalid shared quiz data');
+      }
+    });
+  </script>
+</body>
+</html>
