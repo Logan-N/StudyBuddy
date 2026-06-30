@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+  <title>Study Buddy - Login</title>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Study Buddy</h1>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="quiz.html">Quiz</a>
+        <a href="Planner.html">Planner</a>
+        <a class ="active" href="login.html">Account</a>
+      </nav>
+    </header>
+
+    <h2 class="page-title">Login</h2>
+    <div class="layout">
+      <section class="card">
+        <h3>Enter Your Account Details</h3>
+        <form id="LoginForm">
+          <label for="title">Email</label>
+          <input id="title" name="title" placeholder="example@gmail.com">
+
+          <label for="topic">Password</label>
+          <input id="topic" name="topic" placeholder="">
+          <button type="submit">Login</button>
+        </form>
+      </section>
+
+      <aside class="card">
+        <h3>Not a User?</h3>
+        <div style="margin-top: 12px; display: grid; gap: 8px;">
+        <a class="button-link" href="register.html">Register an Account</a>
+          <div id="shareOutput" class="share-link"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const quizForm = document.getElementById('quizForm');
+    const questionsContainer = document.getElementById('questionsContainer');
+    const downloadQuiz = document.getElementById('downloadQuiz');
+    const shareQuiz = document.getElementById('shareQuiz');
+    const shareOutput = document.getElementById('shareOutput');
+    let lastQuiz = null;
+
+    quizForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value || 'Untitled Quiz';
+      const topic = document.getElementById('topic').value || '';
+      const count = parseInt(document.getElementById('qcount').value, 10) || 5;
+      const type = document.getElementById('type').value;
+      const difficulty = document.getElementById('difficulty').value;
+
+      const questions = [];
+      for (let i = 1; i <= count; i++) {
+        if (type === 'multiple') {
+          questions.push({
+            id: i,
+            type: 'multiple',
+            question: `${title} - Q${i}: ${topic || 'Sample question text'}`,
+            options: ['A', 'B', 'C', 'D'],
+            answer: 'A'
+          });
+        } else if (type === 'truefalse') {
+          questions.push({
+            id: i,
+            type: 'truefalse',
+            question: `${title} - Q${i}: ${topic || 'Sample statement'}`,
+            answer: true
+          });
+        } else {
+          questions.push({
+            id: i,
+            type: 'short',
+            question: `${title} - Q${i}: ${topic || 'Prompt'}`,
+            answer: ''
+          });
+        }
+      }
+
+      lastQuiz = { title, topic, difficulty, type, questions, generatedAt: new Date().toISOString() };
+      renderQuiz(lastQuiz);
+    });
+
+    function renderQuiz(quiz) {
+      questionsContainer.innerHTML = '';
+      const header = document.createElement('div');
+      header.innerHTML = `<strong>${escapeHtml(quiz.title)}</strong> — ${escapeHtml(quiz.topic || 'No topic provided')}`;
+      questionsContainer.appendChild(header);
+      quiz.questions.forEach((q) => {
+        const row = document.createElement('div');
+        row.style.padding = '6px 0';
+        row.textContent = `${q.id}. ${q.question}`;
+        questionsContainer.appendChild(row);
+      });
+    }
+
+    downloadQuiz.addEventListener('click', () => {
+      if (!lastQuiz) return alert('Generate a quiz first');
+      const blob = new Blob([JSON.stringify(lastQuiz, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(lastQuiz.title || 'quiz')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    shareQuiz.addEventListener('click', () => {
+      if (!lastQuiz) return alert('Generate a quiz first');
+      const data = btoa(unescape(encodeURIComponent(JSON.stringify(lastQuiz))));
+      const link = location.origin + location.pathname + '#quiz=' + data;
+      shareOutput.style.display = 'block';
+      shareOutput.textContent = link;
+    });
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c]));
+    }
+
+    window.addEventListener('load', () => {
+      const hash = location.hash.substring(1);
+      if (!hash || !hash.startsWith('quiz=')) return;
+      try {
+        const q = JSON.parse(decodeURIComponent(escape(atob(hash.slice(5)))));
+        lastQuiz = q;
+        renderQuiz(q);
+      } catch (e) {
+        console.warn('Invalid shared quiz data');
+      }
+    });
+  </script>
+</body>
+</html>

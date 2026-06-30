@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+  <title>Study Buddy - Generate Quiz</title>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Study Buddy</h1>
+      <nav>
+        <a href="index.html">Home</a>
+        <a class ="active" href="quiz.html">Quiz</a>
+        <a href="Planner.html">Planner</a>
+		<a href="login.html">Account</a>
+      </nav>
+    </header>
+
+
+    <div class="hero">
+      <section class="card">
+        <h3>Example Quiz</h3>
+        <form id="quizForm">
+          <label for="title">Who is the President Of The United States?</label>
+          <input id="title" name="title" required>
+		  
+          <label for="type">10 Divided By 2 is 5</label>
+          <select id="type" name="type">
+            <option value="true">True</option>
+            <option value="false">False</option>
+          </select>
+    <label for="selection">What Year are we currently in?</label>
+	<div style="display: flex; gap: 20px;">
+	<div> 
+	<input type="radio" id="optionA" name="quiz_choice" value="a" checked> 
+	<label for="optionA">2023</label>
+	</div>
+
+	<div> 
+	<input type="radio" id="optionB" name="quiz_choice" value="b"> 
+	<label for="optionB">2024</label> 
+	</div> 
+
+	<div> 
+	<input type="radio" id="optionC" name="quiz_choice" value="c"> 
+	<label for="optionC">2025</label> 
+	</div> 
+
+	<div> 
+	<input type="radio" id="optionD" name="quiz_choice" value="d"> 
+	<label for="optionD">2026</label> 
+	</div>
+	</div>
+
+	<a class="button-link" href="Quiz.html">Finish Quiz</a>
+	<a class="button-link" href="Quiz.html">Pause Quiz</a>
+        </form>
+      </section>
+
+    </div>
+  </div>
+
+  <script>
+    const quizForm = document.getElementById('quizForm');
+    const questionsContainer = document.getElementById('questionsContainer');
+    const downloadQuiz = document.getElementById('downloadQuiz');
+    const shareQuiz = document.getElementById('shareQuiz');
+    const shareOutput = document.getElementById('shareOutput');
+    let lastQuiz = null;
+
+    quizForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value || 'Untitled Quiz';
+      const topic = document.getElementById('topic').value || '';
+      const count = parseInt(document.getElementById('qcount').value, 10) || 5;
+      const type = document.getElementById('type').value;
+      const difficulty = document.getElementById('difficulty').value;
+
+      const questions = [];
+      for (let i = 1; i <= count; i++) {
+        if (type === 'multiple') {
+          questions.push({
+            id: i,
+            type: 'multiple',
+            question: `${title} - Q${i}: ${topic || 'Sample question text'}`,
+            options: ['A', 'B', 'C', 'D'],
+            answer: 'A'
+          });
+        } else if (type === 'truefalse') {
+          questions.push({
+            id: i,
+            type: 'truefalse',
+            question: `${title} - Q${i}: ${topic || 'Sample statement'}`,
+            answer: true
+          });
+        } else {
+          questions.push({
+            id: i,
+            type: 'short',
+            question: `${title} - Q${i}: ${topic || 'Prompt'}`,
+            answer: ''
+          });
+        }
+      }
+
+      lastQuiz = { title, topic, difficulty, type, questions, generatedAt: new Date().toISOString() };
+      renderQuiz(lastQuiz);
+    });
+
+    function renderQuiz(quiz) {
+      questionsContainer.innerHTML = '';
+      const header = document.createElement('div');
+      header.innerHTML = `<strong>${escapeHtml(quiz.title)}</strong> — ${escapeHtml(quiz.topic || 'No topic provided')}`;
+      questionsContainer.appendChild(header);
+      quiz.questions.forEach((q) => {
+        const row = document.createElement('div');
+        row.style.padding = '6px 0';
+        row.textContent = `${q.id}. ${q.question}`;
+        questionsContainer.appendChild(row);
+      });
+    }
+
+    downloadQuiz.addEventListener('click', () => {
+      if (!lastQuiz) return alert('Generate a quiz first');
+      const blob = new Blob([JSON.stringify(lastQuiz, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(lastQuiz.title || 'quiz')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    shareQuiz.addEventListener('click', () => {
+      if (!lastQuiz) return alert('Generate a quiz first');
+      const data = btoa(unescape(encodeURIComponent(JSON.stringify(lastQuiz))));
+      const link = location.origin + location.pathname + '#quiz=' + data;
+      shareOutput.style.display = 'block';
+      shareOutput.textContent = link;
+    });
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c]));
+    }
+
+    window.addEventListener('load', () => {
+      const hash = location.hash.substring(1);
+      if (!hash || !hash.startsWith('quiz=')) return;
+      try {
+        const q = JSON.parse(decodeURIComponent(escape(atob(hash.slice(5)))));
+        lastQuiz = q;
+        renderQuiz(q);
+      } catch (e) {
+        console.warn('Invalid shared quiz data');
+      }
+    });
+  </script>
+</body>
+</html>
