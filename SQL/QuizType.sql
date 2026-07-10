@@ -1,0 +1,6 @@
+CREATE TABLE QuizType
+(
+  QuizTypeID CHAR(3) NOT NULL,
+  QuizTypeName VARCHAR(30) NOT NULL,
+  PRIMARY KEY (QuizTypeID)
+);
