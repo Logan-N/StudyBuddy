@@ -1,0 +1,11 @@
+CREATE TABLE Quiz
+(
+  QuizID CHAR(6) NOT NULL,
+  GenerateDate DATE NOT NULL,
+  UpdateDate DATE NOT NULL,
+  NoteID CHAR(6) NOT NULL,
+  QuizTypeID CHAR(3) NOT NULL,
+  PRIMARY KEY (QuizID),
+  FOREIGN KEY (NoteID) REFERENCES Notes(NoteID),
+  FOREIGN KEY (QuizTypeID) REFERENCES QuizType(QuizTypeID)
+);
