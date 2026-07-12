@@ -1,4 +1,4 @@
-Create Table Note (
+Create Table Notes (
 	NoteID INT Primary Key,
 	UserID INT,
 	UploadDate DATETIME,
