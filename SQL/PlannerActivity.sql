@@ -1,4 +1,4 @@
-CREATE TABLE PlannerActivityTable (
+CREATE TABLE PlannerActivity (
 ActivityID INTEGER(6) NOT NULL,
 PlannerID INTEGER(6) NOT NULL,
 ActivityType CHAR(3) NOT NULL,
