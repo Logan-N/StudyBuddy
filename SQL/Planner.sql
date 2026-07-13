@@ -1,0 +1,9 @@
+create TABLE Planner(
+	PlannerID INTEGER(6) NOT NULL,
+    UserID INTEGER(6) NOT NULL,
+    PRIMARY KEY (PlannerID),
+    FOREIGN KEY (UserID)
+		REFERENCES User(UserID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
