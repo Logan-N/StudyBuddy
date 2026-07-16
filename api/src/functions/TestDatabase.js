@@ -1,5 +1,5 @@
 const { app } = require("@azure/functions");
-const { getConnection } = require("/api/database");
+const { getConnection } = require("./database");
 
 app.http("testDatabase", {
     methods: ["GET"],
