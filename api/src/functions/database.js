@@ -1,4 +1,4 @@
-// Import the Microsoft SQL Server for Node.js
+// Imports Microsoft SQL Server for Node.js
 const sql = require("mssql");
 
 
