@@ -1,7 +1,7 @@
 //Connect to Azure Functions
 const { app } = require("@azure/functions");
 //Connect to Database
-const { getConnection } = require("./database");
+const { getConnection } = require("../../database");
 //TestDatabase Function with HTTP Trigger
 app.http("testDatabase", {
     //Uses GET request
