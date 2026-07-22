@@ -1,7 +1,7 @@
 //Connect to Azure Functions
 const { app } = require("@azure/functions");
-//Connect to Database
-const { getConnection } = require("../../database");
+//Connect to Database and SQL Server
+const { getConnection, sql } = require("../../database");
 //Connect to bcrypt for password hashing
 const bcrypt = require("bcrypt");
 
