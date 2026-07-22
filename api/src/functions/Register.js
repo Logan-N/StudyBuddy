@@ -20,7 +20,7 @@ app.http("Register", {
             if (!email || !password) {
                 return {
                     status: 400,
-                    jsonbody: {
+                    jsonBody: {
                         message: "Please fill out all fields."
                     }
                 };
@@ -41,7 +41,7 @@ app.http("Register", {
             if (existingUser.length > 0) {
                 return {
                     status: 400,
-                    jsonbody: {
+                    jsonBody: {
                         message: "email already exists."
                     }
                 };
@@ -60,7 +60,7 @@ app.http("Register", {
             //Return a 200 status code and a success message
             return {
                 status: 200,
-                jsonbody: {
+                jsonBody: {
                     message: "User registered successfully."
                 }
             };
@@ -70,7 +70,7 @@ app.http("Register", {
         catch (error) {
             return {
                 status: 500,
-                jsonbody: {
+                jsonBody: {
                     message: "User registration failed: " + error.message
                 }
             };
