@@ -21,7 +21,7 @@ app.http("Register", {
                 return {
                     status: 400,
                     jsonbody: {
-                    message: "Please fill out all fields."
+                        message: "Please fill out all fields."
                     }
                 };
         
@@ -32,7 +32,7 @@ app.http("Register", {
 
             // Check if the email already exists in the database
             const existingUser = await connection.request()
-                .input("email", sql.NVarChar, email)
+                .input("email", sql.VarChar, email)
                 .query(
                     "SELECT UserID FROM Users WHERE Email = @email"
                 );
@@ -42,7 +42,7 @@ app.http("Register", {
                 return {
                     status: 400,
                     jsonbody: {
-                    message: "email already exists."
+                        message: "email already exists."
                     }
                 };
             }
