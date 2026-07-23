@@ -22,6 +22,7 @@
     <div class="layout">
 	<section class="card">
 	  <h3>Calendar</h3>
+	  <div id="calendarGrid" class="calendar-grid"></div>
 	 </section>
 	  
       <aside class="card">
@@ -62,36 +63,115 @@
     const exportPlanner = document.getElementById('exportPlanner');
     const sharePlanner = document.getElementById('sharePlanner');
     const plannerShare = document.getElementById('plannerShare');
+    const calendarGrid = document.getElementById('calendarGrid');
     let events = [];
 
-    plannerForm.addEventListener('submit', (e) => {
+    plannerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
       const date = document.getElementById('eventDate').value;
       const title = document.getElementById('eventTitle').value;
       const notes = document.getElementById('eventNotes').value;
-      const ev = { id: Date.now(), date, title, notes };
-      events.push(ev);
-      renderEvents();
-      plannerForm.reset();
+
+      try {
+        const response = await fetch("http://localhost:7071/api/planner", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            userId: 1,
+            date,
+            title,
+            notes
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          events.push({ id: Date.now(), date, title, notes });
+          renderEvents();
+          plannerForm.reset();
+        } else {
+          console.error(result);
+        }
+      } catch (error) {
+        console.error("Failed to save planner event:", error);
+      }
     });
 
     function renderEvents() {
       plannerList.innerHTML = '';
+
       if (events.length === 0) {
         plannerList.innerHTML = '<div class="small">No events yet.</div>';
+        renderCalendar();
         return;
       }
+
       events.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach((ev) => {
         const div = document.createElement('div');
-        div.className = 'event';
+        div.className = 'event-card';
         div.innerHTML = `
-          <div>
-            <strong>${escapeHtml(ev.title)}</strong>
-            <div class="small">${escapeHtml(ev.date)}${ev.notes ? ' — ' + escapeHtml(ev.notes) : ''}</div>
+          <div class="event-icon">📅</div>
+          <div class="event-content">
+            <h4>${escapeHtml(ev.title)}</h4>
+            <div class="event-date">${escapeHtml(formatDate(ev.date))}${ev.notes ? ' · ' + escapeHtml(ev.notes) : ''}</div>
           </div>
-          <div class="small">#${ev.id}</div>
         `;
         plannerList.appendChild(div);
+      });
+
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      if (!calendarGrid) return;
+
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const startingDay = firstDay.getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      calendarGrid.innerHTML = '';
+
+      dayNames.forEach((name) => {
+        const label = document.createElement('div');
+        label.className = 'calendar-label';
+        label.textContent = name;
+        calendarGrid.appendChild(label);
+      });
+
+      for (let i = 0; i < startingDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-day empty';
+        calendarGrid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day';
+
+        const dateValue = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasEvent = events.some((ev) => ev.date === dateValue);
+
+        cell.innerHTML = `<div class="calendar-day-number">${day}</div>${hasEvent ? '<div class="calendar-day-event">•</div>' : ''}`;
+        calendarGrid.appendChild(cell);
+      }
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString + 'T00:00:00');
+      return date.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
     }
 
@@ -126,13 +206,15 @@
 
     window.addEventListener('load', () => {
       const hash = location.hash.substring(1);
-      if (!hash || !hash.startsWith('planner=')) return;
-      try {
-        events = JSON.parse(decodeURIComponent(escape(atob(hash.slice(8)))));
-        renderEvents();
-      } catch (e) {
-        console.warn('Invalid shared planner data');
+      if (hash && hash.startsWith('planner=')) {
+        try {
+          events = JSON.parse(decodeURIComponent(escape(atob(hash.slice(8)))));
+        } catch (e) {
+          console.warn('Invalid shared planner data');
+        }
       }
+
+      renderEvents();
     });
   </script>
 </body>
