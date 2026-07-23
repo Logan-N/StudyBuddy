@@ -14,9 +14,12 @@
         <a class="active" href="index.html">Home</a>
         <a href="quiz.html">Quiz</a>
         <a href="planner.html">Planner</a>
-		<a href="login.html">Account</a>
+        <a href="login.html">Account</a>
       </nav>
     </header>
+
+
+
 
     <h2 class="page-title">Quiz Generator</h2>
     <div class="layout">
@@ -26,18 +29,32 @@
           <label for="title">Quiz Title</label>
           <input id="title" name="title" placeholder="e.g., Biology Basics" required>
 
+
+
+
           <label for="topic">Topic / Instructions</label>
           <input id="topic" name="topic" placeholder="e.g., Intro to cells or ask for multiple choice">
 
+
+
+
           <label for="qcount">Number of Questions</label>
           <input id="qcount" name="qcount" type="number" min="1" max="50" value="5">
+
+
+
 
           <label for="type">Question Type</label>
           <select id="type" name="type">
             <option value="multiple">Multiple Choice</option>
             <option value="short">Short Answer</option>
+            <option value="fill">Fill in the Blank</option>
+            <option value="flashcard">Flashcard</option>
             <option value="truefalse">True / False</option>
           </select>
+
+
+
 
           <label for="difficulty">Difficulty</label>
           <select id="difficulty">
@@ -46,10 +63,14 @@
             <option value="hard">Hard</option>
           </select>
 
-          <button type="submit">Generate Quiz</button>
-		  <a class="button-link" href="Quiz.html">Cancel</a>
+
+          <button type="submit">Generate and Save Quiz</button>
+          <a class="button-link" href="Quiz.html">Cancel</a>
         </form>
       </section>
+
+
+
 
       <aside class="card">
         <h3>Preview</h3>
@@ -63,6 +84,9 @@
     </div>
   </div>
 
+
+
+
   <script>
     const quizForm = document.getElementById('quizForm');
     const questionsContainer = document.getElementById('questionsContainer');
@@ -71,6 +95,9 @@
     const shareOutput = document.getElementById('shareOutput');
     let lastQuiz = null;
 
+
+
+
     quizForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const title = document.getElementById('title').value || 'Untitled Quiz';
@@ -78,6 +105,9 @@
       const count = parseInt(document.getElementById('qcount').value, 10) || 5;
       const type = document.getElementById('type').value;
       const difficulty = document.getElementById('difficulty').value;
+
+
+
 
       const questions = [];
       for (let i = 1; i <= count; i++) {
@@ -89,7 +119,23 @@
             options: ['A', 'B', 'C', 'D'],
             answer: 'A'
           });
-        } else if (type === 'truefalse') {
+         
+        } else if (type === 'fill') {
+          questions.push({
+            id: i,
+            type: 'fill',
+            question: `${title} - Q${i}: ${topic || 'Fill in the blank statement (use ___)'}`,
+            answer: 'Sample Answer'
+        });
+       
+        } else if (type === 'flashcard') {
+          questions.push({
+          id: i,
+          type: 'flashcard',
+          question: `${title} - Q${i}: ${topic || 'Flashcard prompt'}`,
+          answer: 'Flashcard Back Answer'
+        });
+        }   else if (type === 'truefalse') {
           questions.push({
             id: i,
             type: 'truefalse',
@@ -106,9 +152,73 @@
         }
       }
 
+
+
+
       lastQuiz = { title, topic, difficulty, type, questions, generatedAt: new Date().toISOString() };
       renderQuiz(lastQuiz);
-    });
+
+
+
+
+      // database saving
+      const quizId = 1;
+
+
+
+
+      questions.forEach(function(q) {
+        // loop for function
+        // endpoint for url address
+        let endpoint = "";
+        // holds data to send
+        let dataToSend = {};
+
+
+
+
+        // check if McQ
+        if (type === 'multiple') {
+          // endpoint check
+          endpoint = '/api/SaveMultipleChoice';
+          // sends necessary data
+          dataToSend = { quizId: quizId, questionText: q.question, options: q.options, correctAnswer: q.answer };
+        } // same idea as endpoint check
+        else if (type === 'fill') {
+          endpoint = '/api/SaveFillInTheBlank';
+          dataToSend = { quizId: quizId, questionText: q.question, correctAnswer: q.answer };
+        } // same idea as endpoint check
+        else if (type === 'flashcard') {
+          endpoint = '/api/SaveFlashcard';
+          dataToSend = { quizId: quizId, questionText: q.question, correctAnswer: q.answer };
+        }
+
+
+
+
+        if (endpoint !== "") {
+          // for backend request
+          fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dataToSend)
+          })
+          .then(function(response) {
+            // display status
+            console.log("Server status:", response.status);
+          })
+          .catch(function(error) {
+            // catch error
+            console.log("Server Status error", error);
+          });
+        }
+      });
+      // display message succes on generation
+      alert("Succes in Quiz generation and sent to database");
+    }); // End of submit function
+
+
+
 
     function renderQuiz(quiz) {
       questionsContainer.innerHTML = '';
@@ -123,6 +233,9 @@
       });
     }
 
+
+
+
     downloadQuiz.addEventListener('click', () => {
       if (!lastQuiz) return alert('Generate a quiz first');
       const blob = new Blob([JSON.stringify(lastQuiz, null, 2)], { type: 'application/json' });
@@ -136,6 +249,9 @@
       URL.revokeObjectURL(url);
     });
 
+
+
+
     shareQuiz.addEventListener('click', () => {
       if (!lastQuiz) return alert('Generate a quiz first');
       const data = btoa(unescape(encodeURIComponent(JSON.stringify(lastQuiz))));
@@ -143,6 +259,9 @@
       shareOutput.style.display = 'block';
       shareOutput.textContent = link;
     });
+
+
+
 
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, (c) => ({
@@ -153,6 +272,9 @@
         "'": '&#39;'
       }[c]));
     }
+
+
+
 
     window.addEventListener('load', () => {
       const hash = location.hash.substring(1);
@@ -168,3 +290,6 @@
   </script>
 </body>
 </html>
+
+
+
