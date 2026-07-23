@@ -21,9 +21,9 @@
     <h2 class="page-title">Planner</h2>
     <div class="layout">
 	<section class="card">
-	  <h3>Calendar</h3>
-	  <div id="calendarGrid" class="calendar-grid"></div>
-	 </section>
+  <h3 id="calendarTitle">Calendar</h3>
+  <div id="calendarGrid" class="calendar-grid"></div>
+</section>
 	  
       <aside class="card">
         <h3>Add Event</h3>
@@ -136,8 +136,12 @@
       const startingDay = firstDay.getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
+      const calendarTitle = document.getElementById('calendarTitle');
       calendarGrid.innerHTML = '';
+// set the calendar title to show the current month + year
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+  calendarTitle.textContent = `${monthNames[month]} ${year}`;
 
       dayNames.forEach((name) => {
         const label = document.createElement('div');
