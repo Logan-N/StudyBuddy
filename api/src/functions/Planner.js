@@ -11,6 +11,8 @@ app.http("Planner", {
 
   // Get JWT token from request header
   const authHeader = request.headers.get("authorization");
+  console.log("Authorization Header:", authHeader);
+  console.log("Secret exists:", !!process.env.JWT_SECRET);
 
   // If no token is provided, return a 401 error
     if (!authHeader) {
@@ -23,7 +25,8 @@ app.http("Planner", {
   }
 
 // Remove "Bearer " from the token
-const token = authHeader.replace("Bearer ", "");
+const token = authHeader.split(" ")[1];
+console.log("Token:", token);
 
 // Verify the token and decode it to get the user ID
 let decoded;
