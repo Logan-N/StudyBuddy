@@ -5,42 +5,35 @@ app.http("Planner", {
   methods: ["POST","GET"],
   authLevel: "anonymous",
   handler: async (request) => {
-    try {
-      // wait for connection
-       const pool = await getConnection();
-      //Get request check
-       if (request.method === "GET") {
-      try {
-        //read user ID
-        const userId = request.query.get("userId");
+    const pool = await getConnection();
 
+    // Temporary until I add Tokens
+    const userId = 1;
+
+    // Load planner events
+    if (request.method === "GET") {
         const result = await pool.request()
-          .input("userId", sql.Int, userId)
-          .query(`
-            SELECT pa.ActivityID, pa.ActivityType, pa.ActivityDate, pa.ActivityTitle, pa.Notes
-            FROM PlannerActivity pa
-            JOIN Planner p ON pa.PlannerID = p.PlannerID
-            WHERE p.UserID = @userId
-            ORDER BY pa.ActivityDate
-          `);
-
+            .input("userId", sql.Int, userId)
+            .query(`
+                SELECT
+                    PA.ActivityDate,
+                    PA.ActivityType,
+                    PA.ActivityTitle,
+                    PA.Notes
+                FROM Planner P
+                JOIN PlannerActivity PA
+                    ON P.PlannerID = PA.PlannerID
+                WHERE P.UserID = @userId
+                ORDER BY PA.ActivityDate
+            `);
         return {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(result.recordset)
+            status: 200,
+            jsonBody: result.recordset
         };
-      } catch (error) {
-        return {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ error: "Failed to load events: " + error.message })
-        };
-      }
     }
-     
+    
       const body = await request.json();
-  const activityType=body.activityType;
-      const userId = 1;
+      const activityType=body.activityType;
       const activityDate = body.date;
       const activityTitle = body.title;
       const notes = body.notes || "none"; // just to show there aren't any default notes
