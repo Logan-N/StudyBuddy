@@ -13,6 +13,7 @@
   "dependencies": {
     "@azure/functions": "^4.16.2",
     "bcrypt": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
     "mssql": "^12.7.0"
   },
   "allowScripts": {
