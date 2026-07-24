@@ -11,38 +11,46 @@
     <header>
       <h1>Study Buddy</h1>
       <nav>
-        <a class="active" href="index.html">Home</a>
-        <a href="quiz.html">Quiz</a>
-        <a href="planner.html">Planner</a>
-        <a href="login.html">Account</a>
+        <a class ="active" href="index.html">Home</a>
+        <a href="login.html">Login</a>
+		    <a href="register.html">Sign Up</a>
       </nav>
     </header>
 
-    <section class="hero">
-      <h1>Welcome to your Study Dashboard</h1>
-      <p>Create quizzes, review topics, and keep track of study plans in one simple place.</p>
-    </section>
 
-    <section class="cards">
-      <div class="card">
-        <h2>View Quizzes</h2>
-        <p>Open and review or take previously generated quizzes.</p>
-        <a class="button-link" href="quiz.html">Open a Quiz</a>
-      </div>
-	  <div class="card">
-        <h2>Quiz Generator</h2>
-        <p>Build custom quizzes for any topic and download or share them.</p>
-		<a class="button-link" href="generatequiz.html">Generate New Quiz</a>
-      </div>
-      <div class="card">
-        <h2>Study Planner</h2>
-        <p>Save dates, tasks, and notes so you can stay organized.</p>
-        <a class="button-link" href="planner.html">Open Planner</a>
-      </div>
-    </section>
-	<section class="events">
-      <h1>Upcoming Events</h1>
-      <p>No Events Yet. Create Some in the Planner!</p>
-	</div>
+    <div class="layout">
+      <section class="card">
+	<h1>Welcome to Study Buddy</h1>
+      <p>Create quizzes, review topics, and keep track of study plans in one simple place.</p>
+      <h1>What We Offer</h1>
+		<div class="card">
+			<h2>Quiz Generator</h2>
+			<p>Build custom quizzes for any topic and download or share them.</p>
+			
+		</div>
+		<div class="card">
+			<h2>Study Planner</h2>
+			<p>Save dates, tasks, and notes so you can stay organized.</p>
+			<p>Your planner can be shared with other students to organize schedules!
+      </section>
+
+		<aside class="card">
+	    <h3>Login or Register to Get Started!</h3>
+        <form id="LoginForm">
+          <label for="title">Email</label>
+          <input id="title" name="title" placeholder="example@gmail.com">
+          <label for="topic">Password</label>
+          <input id="topic" name="topic" placeholder="">
+          <button type="submit">Login</button>
+        </form>
+		
+        <h3>Not a User?</h3>
+        <div style="margin-top: 12px; display: grid; gap: 8px;">
+        <a class="button-link" href="register.html">Register an Account</a>
+          <div id="shareOutput" class="share-link"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
 </body>
 </html>
