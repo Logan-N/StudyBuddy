@@ -36,12 +36,14 @@
 
 		<aside class="card">
 	    <h3>Login or Register to Get Started!</h3>
-        <form id="LoginForm">
-          <label for="title">Email</label>
-          <input id="title" name="title" placeholder="example@gmail.com">
-          <label for="topic">Password</label>
-          <input id="topic" name="topic" placeholder="">
-          <button type="submit">Login</button>
+      <form id="LoginForm">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="example@gmail.com" required>
+
+        <label for="password">Password</label>
+        <input type ="password" id="password" name="password" placeholder="Password" required>
+          
+        <button type="submit">Login</button>
         </form>
 		
         <h3>Not a User?</h3>
@@ -52,5 +54,50 @@
       </aside>
     </div>
   </div>
+  
+ <script>
+     // Get the form element by its ID and store in the register variable
+    const login = document.getElementById("LoginForm");
+
+    // Add an event listener to the form that listens for the submit event
+    login.addEventListener("submit", async (event) => {
+
+      // Prevent the default form submission from being sent
+      event.preventDefault();
+
+      // get the values of the email and password input fields and store them in a variable
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        // Send the Login Form data to the server
+        const response = await fetch("/api/Login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          // Send the email and password as a JSON string in the request body
+          body: JSON.stringify({ email, password }),
+        });
+
+        // Return result
+        const result = await response.json();
+        // If the response is not ok, throw an error with the message from the server
+        if (!response.ok) {
+        throw new Error(result.message);
+        }
+        // If the response is ok, alert the user with the success message
+        alert(result.message);
+        window.location.href = "home.html";
+      }
+      
+      catch (error) {
+        // If there is an error, alert the user with the error message
+        alert(`Error: ${error.message}`);
+      }
+      
+    }
+  );
+  </script>
 </body>
 </html>
