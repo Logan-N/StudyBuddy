@@ -33,7 +33,7 @@
 	
           <label for="eventTitle">Title</label>
           <input id="eventTitle" placeholder="e.g., Quiz: Biology Basics" required>
-		  <label for ="eventTitle"> Activity Type </label>
+		  <label for ="activityType"> Activity Type </label>
 		  <select id="activityType" required>
 			<option value="CLA">classes</option>
     		<option value="DEA">deadlines</option>
@@ -98,7 +98,7 @@
         const result = await response.json();
 
         if (response.ok) {
-          events.push({ id: Date.now(), date, title, notes });
+          events.push({ id: Date.now(), date, activityType, title, notes });
           renderEvents();
           plannerForm.reset();
         } else {
