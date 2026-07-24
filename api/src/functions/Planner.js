@@ -1,7 +1,7 @@
 const { app } = require("@azure/functions");
 const { getConnection, sql } = require("../../database");
 
-app.http("planner", {
+app.http("Planner", {
   methods: ["POST"],
   authLevel: "anonymous",
   handler: async (request) => {
