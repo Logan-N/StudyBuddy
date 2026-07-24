@@ -8,7 +8,7 @@ app.http("planner", {
     try {
       const pool = await getConnection();
       const body = await request.json();
-
+  const activityType=body.activityType;
       const userId = 0;
       const activityDate = body.date;
       const activityTitle = body.title;
@@ -47,7 +47,7 @@ app.http("planner", {
 //insert the activity into the PlannerActivity table
       await pool.request()
         .input("plannerId", sql.Int, plannerId)
-        .input("activityType", sql.Char(3), ActivityDate)
+        .input("activityType", sql.Char(3), activityType)
         .input("activityDate", sql.Date, activityDate)
         .input("activityTitle", sql.VarChar(30), activityTitle)
         .input("notes", sql.VarChar(sql.MAX), notes)
