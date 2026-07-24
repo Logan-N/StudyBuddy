@@ -42,7 +42,7 @@ try {
 }
 
 // Get user ID from JWT
-const userId = decoded.userId;
+const userId = decoded.userID;
 
     // Load planner events
     if (request.method === "GET") {
