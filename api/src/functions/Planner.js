@@ -9,7 +9,7 @@ app.http("planner", {
       const pool = await getConnection();
       const body = await request.json();
   const activityType=body.activityType;
-      const userId = 0;
+      const userId = 1;
       const activityDate = body.date;
       const activityTitle = body.title;
       const notes = body.notes || "none"; // just to show there aren't any default notes
