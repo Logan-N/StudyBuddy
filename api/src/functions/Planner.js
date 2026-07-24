@@ -19,7 +19,7 @@ app.http("planner", {
           status: 400,
               jsonBody: 
               {
-                message: "Missing required fields"\
+                message: "Missing required fields"
               }
         };
       }
