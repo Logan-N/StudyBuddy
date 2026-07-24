@@ -47,10 +47,10 @@ app.http("planner", {
 //insert the activity into the PlannerActivity table
       await pool.request()
         .input("plannerId", sql.Int, plannerId)
-        .input("activityType", sql.Char(3), "EVT")
+        .input("activityType", sql.Char(3), ActivityDate)
         .input("activityDate", sql.Date, activityDate)
         .input("activityTitle", sql.VarChar(30), activityTitle)
-        .input("notes", sql.NVarChar(sql.MAX), notes)
+        .input("notes", sql.VarChar(sql.MAX), notes)
         .query(`
           INSERT INTO PlannerActivity (
             PlannerID,
