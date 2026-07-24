@@ -5,6 +5,7 @@ app.http("Planner", {
   methods: ["POST","GET"],
   authLevel: "anonymous",
   handler: async (request) => {
+    try {
     const pool = await getConnection();
 
     // Temporary until I add Tokens
