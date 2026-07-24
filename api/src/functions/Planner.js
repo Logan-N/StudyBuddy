@@ -19,7 +19,7 @@ app.http("Planner", {
       return {
         status: 401,
         jsonBody: {
-          message: "No authentication token provided."
+          message: "No authentication token was provided."
       }
     };
   }
