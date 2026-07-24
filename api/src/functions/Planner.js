@@ -17,7 +17,10 @@ app.http("planner", {
       if (!userId || !activityDate || !activityTitle) {
         return {
           status: 400,
-          body: "Missing required fields"
+              jsonBody: 
+              {
+                message: "Missing required fields"\
+              }
         };
       }
 // look up planner using userID
@@ -70,13 +73,19 @@ app.http("planner", {
 
       return {
         status: 200,
-        body: JSON.stringify({ success: true })
+        jsonBody: 
+        {
+          message: success: true
+        }
       };
     } catch (error) {
         // return a server error
       return {
         status: 500,
-        body: "Planner save failed: " + error.message
+        jsonBody: 
+        {
+          message: "Planner save failed: " + error.message
+        }
       };
     }
   }
