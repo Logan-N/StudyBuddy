@@ -2,11 +2,42 @@ const { app } = require("@azure/functions");
 const { getConnection, sql } = require("../../database");
 
 app.http("Planner", {
-  methods: ["POST"],
+  methods: ["POST","GET"],
   authLevel: "anonymous",
   handler: async (request) => {
     try {
-      const pool = await getConnection();
+      // wait for connection
+       const pool = await getConnection();
+      //Get request check
+       if (request.method === "GET") {
+      try {
+        //read user ID
+        const userId = request.query.get("userId");
+
+        const result = await pool.request()
+          .input("userId", sql.Int, userId)
+          .query(`
+            SELECT pa.ActivityID, pa.ActivityType, pa.ActivityDate, pa.ActivityTitle, pa.Notes
+            FROM PlannerActivity pa
+            JOIN Planner p ON pa.PlannerID = p.PlannerID
+            WHERE p.UserID = @userId
+            ORDER BY pa.ActivityDate
+          `);
+
+        return {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(result.recordset)
+        };
+      } catch (error) {
+        return {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ error: "Failed to load events: " + error.message })
+        };
+      }
+    }
+     
       const body = await request.json();
   const activityType=body.activityType;
       const userId = 1;
