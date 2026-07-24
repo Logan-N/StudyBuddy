@@ -71,7 +71,30 @@
     const plannerShare = document.getElementById('plannerShare');
     const calendarGrid = document.getElementById('calendarGrid');
     let events = [];
+	// Load planner events from the database
+	async function loadPlanner() {
+ 	 try {
 
+   		 // Call the GET request to the Planner Azure Function
+    	const response = await fetch("/api/Planner");
+
+    	const result = await response.json();
+
+   	 	// Replace the current events array with the events from SQL
+    	events = result.map(event => ({
+     	 date: event.ActivityDate.split("T")[0],
+     	 title: event.ActivityTitle,
+      	notes: event.Notes
+    }));
+
+    // Display the events and calendar
+    renderEvents();
+
+  	} catch (error) 
+	{
+    console.error("Failed to load planner:", error);
+  	}
+}
     plannerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 	
@@ -224,17 +247,21 @@
       }[c]));
     }
 
-    window.addEventListener('load', () => {
-      const hash = location.hash.substring(1);
-      if (hash && hash.startsWith('planner=')) {
-        try {
-          events = JSON.parse(decodeURIComponent(escape(atob(hash.slice(8)))));
-        } catch (e) {
-          console.warn('Invalid shared planner data');
-        }
-      }
+   window.addEventListener("load", async () => {
 
-      renderEvents();
+  // Keep your shared planner feature if you still want it
+  const hash = location.hash.substring(1);
+
+  if (hash && hash.startsWith("planner=")) {
+    try {
+      events = JSON.parse(decodeURIComponent(escape(atob(hash.slice(8)))));
+    } catch (e) {
+      console.warn("Invalid shared planner data");
+    }
+  }
+
+  // Load events from SQL
+  await loadPlanner();
     });
   </script>
 </body>
