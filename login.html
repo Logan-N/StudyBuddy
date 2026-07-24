@@ -23,11 +23,12 @@
       <section class="card">
         <h3>Enter Your Account Details</h3>
         <form id="LoginForm">
-          <label for="title">Email</label>
-          <input id="title" name="title" placeholder="example@gmail.com">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="example@gmail.com" required>
 
-          <label for="topic">Password</label>
-          <input id="topic" name="topic" placeholder="">
+          <label for="password">Password</label>
+          <input type ="password" id="password" name="password" placeholder="Password" required>
+          
           <button type="submit">Login</button>
         </form>
       </section>
@@ -43,107 +44,47 @@
   </div>
 
   <script>
-    const quizForm = document.getElementById('quizForm');
-    const questionsContainer = document.getElementById('questionsContainer');
-    const downloadQuiz = document.getElementById('downloadQuiz');
-    const shareQuiz = document.getElementById('shareQuiz');
-    const shareOutput = document.getElementById('shareOutput');
-    let lastQuiz = null;
+     // Get the form element by its ID and store in the register variable
+    const login = document.getElementById("LoginForm");
 
-    quizForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const title = document.getElementById('title').value || 'Untitled Quiz';
-      const topic = document.getElementById('topic').value || '';
-      const count = parseInt(document.getElementById('qcount').value, 10) || 5;
-      const type = document.getElementById('type').value;
-      const difficulty = document.getElementById('difficulty').value;
+    // Add an event listener to the form that listens for the submit event
+    login.addEventListener("submit", async (event) => {
 
-      const questions = [];
-      for (let i = 1; i <= count; i++) {
-        if (type === 'multiple') {
-          questions.push({
-            id: i,
-            type: 'multiple',
-            question: `${title} - Q${i}: ${topic || 'Sample question text'}`,
-            options: ['A', 'B', 'C', 'D'],
-            answer: 'A'
-          });
-        } else if (type === 'truefalse') {
-          questions.push({
-            id: i,
-            type: 'truefalse',
-            question: `${title} - Q${i}: ${topic || 'Sample statement'}`,
-            answer: true
-          });
-        } else {
-          questions.push({
-            id: i,
-            type: 'short',
-            question: `${title} - Q${i}: ${topic || 'Prompt'}`,
-            answer: ''
-          });
-        }
-      }
+      // Prevent the default form submission from being sent
+      event.preventDefault();
 
-      lastQuiz = { title, topic, difficulty, type, questions, generatedAt: new Date().toISOString() };
-      renderQuiz(lastQuiz);
-    });
+      // get the values of the email and password input fields and store them in a variable
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
 
-    function renderQuiz(quiz) {
-      questionsContainer.innerHTML = '';
-      const header = document.createElement('div');
-      header.innerHTML = `<strong>${escapeHtml(quiz.title)}</strong> — ${escapeHtml(quiz.topic || 'No topic provided')}`;
-      questionsContainer.appendChild(header);
-      quiz.questions.forEach((q) => {
-        const row = document.createElement('div');
-        row.style.padding = '6px 0';
-        row.textContent = `${q.id}. ${q.question}`;
-        questionsContainer.appendChild(row);
-      });
-    }
-
-    downloadQuiz.addEventListener('click', () => {
-      if (!lastQuiz) return alert('Generate a quiz first');
-      const blob = new Blob([JSON.stringify(lastQuiz, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${(lastQuiz.title || 'quiz')}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    });
-
-    shareQuiz.addEventListener('click', () => {
-      if (!lastQuiz) return alert('Generate a quiz first');
-      const data = btoa(unescape(encodeURIComponent(JSON.stringify(lastQuiz))));
-      const link = location.origin + location.pathname + '#quiz=' + data;
-      shareOutput.style.display = 'block';
-      shareOutput.textContent = link;
-    });
-
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, (c) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      }[c]));
-    }
-
-    window.addEventListener('load', () => {
-      const hash = location.hash.substring(1);
-      if (!hash || !hash.startsWith('quiz=')) return;
       try {
-        const q = JSON.parse(decodeURIComponent(escape(atob(hash.slice(5)))));
-        lastQuiz = q;
-        renderQuiz(q);
-      } catch (e) {
-        console.warn('Invalid shared quiz data');
+        // Send the Login Form data to the server
+        const response = await fetch("/api/Login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          // Send the email and password as a JSON string in the request body
+          body: JSON.stringify({ email, password }),
+        });
+
+        // Return result
+        const result = await response.json();
+        // If the response is not ok, throw an error with the message from the server
+        if (!response.ok) {
+        throw new Error(result.message);
+        }
+        // If the response is ok, alert the user with the success message
+        alert(result.message);
       }
-    });
+      
+      catch (error) {
+        // If there is an error, alert the user with the error message
+        alert(`Error: ${error.message}`);
+      }
+      
+    }
+  );
   </script>
 </body>
 </html>
