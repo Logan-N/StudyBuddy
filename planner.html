@@ -30,13 +30,19 @@
         <form id="plannerForm">
           <label for="eventDate">Date</label>
           <input id="eventDate" type="date" required>
-
+	
           <label for="eventTitle">Title</label>
           <input id="eventTitle" placeholder="e.g., Quiz: Biology Basics" required>
-
+		  <label for ="eventTitle"> Activity Type </label>
+		  <select id="activityType" required>
+			<option value="CLA">classes</option>
+    		<option value="DEA">deadlines</option>
+    		<option value="EXA">Exam</option>
+			<option value="STD">Study goals</option>
+		  </select>
           <label for="eventNotes">Notes (optional)</label>
           <textarea id="eventNotes" rows="4" placeholder="Add study goals or reminders"></textarea>
-
+			
           <button type="submit">Add to Planner</button>
         </form>
       </aside>
