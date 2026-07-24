@@ -83,14 +83,17 @@
   }
 });
 
-    	const result = await response.json();
+    const result = await response.json();
 
-   	 	// Replace the current events array with the events from SQL
-    	events = result.map(event => ({
-     	 date: event.ActivityDate.split("T")[0],
-     	 title: event.ActivityTitle,
-      	notes: event.Notes
-    }));
+    if (!response.ok) {
+      throw new Error(result.message);
+    }
+
+    events = result.map(event => ({
+    date: event.ActivityDate.split("T")[0],
+    title: event.ActivityTitle,
+    notes: event.Notes
+}));
 
     // Display the events and calendar
     renderEvents();
