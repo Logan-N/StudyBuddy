@@ -76,7 +76,12 @@
  	 try {
 
    		 // Call the GET request to the Planner Azure Function
-    	const response = await fetch("/api/Planner");
+       const response = await fetch("/api/Planner", {
+       method: "GET",
+       headers: {
+       "Authorization": `Bearer ${localStorage.getItem("token")}`
+  }
+});
 
     	const result = await response.json();
 
@@ -95,11 +100,12 @@
     console.error("Failed to load planner:", error);
   	}
 }
+    // Add event listener for the planner form submission
     plannerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 	
       const date = document.getElementById('eventDate').value;
-	  const activityType = document.getElementById('activityType').value;
+	    const activityType = document.getElementById('activityType').value;
       const title = document.getElementById('eventTitle').value;
       const notes = document.getElementById('eventNotes').value;
 
@@ -107,12 +113,12 @@
         const response = await fetch("/api/Planner", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
           },
           body: JSON.stringify({
-            userId: 1,
             date,
-			activityType,
+			      activityType,
             title,
             notes
           })

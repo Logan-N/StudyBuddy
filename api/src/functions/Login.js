@@ -4,7 +4,8 @@ const { app } = require("@azure/functions");
 const { getConnection, sql } = require("../../database");
 //Connect to bcrypt for password hashing
 const bcrypt = require("bcrypt");
-
+//Connect to jsonwebtoken for creating and verifying tokens
+const jwt = require("jsonwebtoken");
 app.http("Login", {
     //Uses POST request to send data to the database
     methods: ["POST"],
@@ -59,12 +60,25 @@ app.http("Login", {
                 };
             }
 
+            //Create a token with the user's ID
+            const token = jwt.sign
+            (
+                { 
+                    userID: user.recordset[0].UserID,
+                    email: user.recordset[0].Email
+                }, 
+                process.env.JWT_SECRET,
+                { 
+                    expiresIn: "1h" 
+                }
+            );
+
             //If the passwords match, return a 200 status code and a success message
             return {
                 status: 200,
                 jsonBody: {
                     message: "Login successful.",
-                    userID: user.recordset[0].UserID
+                    token
                 }
             };
             

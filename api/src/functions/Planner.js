@@ -1,5 +1,6 @@
 const { app } = require("@azure/functions");
 const { getConnection, sql } = require("../../database");
+const jwt = require("jsonwebtoken");
 
 app.http("Planner", {
   methods: ["POST","GET"],
@@ -8,8 +9,40 @@ app.http("Planner", {
     try {
     const pool = await getConnection();
 
-    // Temporary until I add Tokens
-    const userId = 1;
+  // Get JWT token from request header
+  const authHeader = request.headers.get("authorization");
+
+  // If no token is provided, return a 401 error
+    if (!authHeader) {
+      return {
+        status: 401,
+        jsonBody: {
+          message: "No authentication token provided."
+      }
+    };
+  }
+
+// Remove "Bearer " from the token
+const token = authHeader.replace("Bearer ", "");
+
+// Verify the token and decode it to get the user ID
+let decoded;
+
+try {
+  // Verify token is valid
+  decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+} catch (error) {
+  return {
+    status: 401,
+    jsonBody: {
+      message: "Invalid or expired token."
+    }
+  };
+}
+
+// Get user ID from JWT
+const userId = decoded.userId;
 
     // Load planner events
     if (request.method === "GET") {
