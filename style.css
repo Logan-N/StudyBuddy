@@ -196,6 +196,8 @@
       color: #2563eb;
       font-size: 1rem;
       line-height: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 	.page-title {
     margin: 0 0 12px;
@@ -215,3 +217,8 @@
       box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
 
     }
+    .calendar-multiple {
+  font-size: 0.65rem;
+  color: #666;
+  margin-top: 1px;
+}

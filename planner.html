@@ -151,21 +151,29 @@
       });
 
       for (let i = 0; i < startingDay; i++) {
-        const empty = document.createElement('div');
-        empty.className = 'calendar-day empty';
-        calendarGrid.appendChild(empty);
+    const empty = document.createElement('div');
+    empty.className = 'calendar-day empty';
+    calendarGrid.appendChild(empty);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-day';
+
+    const dateValue = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dayEvents = events.filter((ev) => ev.date === dateValue);
+
+    let eventHtml = '';
+    if (dayEvents.length > 0) {
+      eventHtml = `<div class="calendar-day-event">${escapeHtml(dayEvents[0].title)}</div>`;
+      if (dayEvents.length > 1) {
+        eventHtml += `<div class="calendar-multiple">+${dayEvents.length - 1} more</div>`;
       }
+    }
 
-      for (let day = 1; day <= daysInMonth; day++) {
-        const cell = document.createElement('div');
-        cell.className = 'calendar-day';
-
-        const dateValue = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const hasEvent = events.some((ev) => ev.date === dateValue);
-
-        cell.innerHTML = `<div class="calendar-day-number">${day}</div>${hasEvent ? '<div class="calendar-day-event">•</div>' : ''}`;
-        calendarGrid.appendChild(cell);
-      }
+    cell.innerHTML = `<div class="calendar-day-number">${day}</div>${eventHtml}`;
+    calendarGrid.appendChild(cell);
+  }
     }
 
     function formatDate(dateString) {
