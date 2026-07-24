@@ -75,7 +75,7 @@ app.http("Planner", {
         status: 200,
         jsonBody: 
         {
-          message: success: true
+          message: "Planner event saved successfully."
         }
       };
     } catch (error) {
