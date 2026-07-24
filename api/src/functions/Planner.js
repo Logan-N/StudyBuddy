@@ -36,10 +36,11 @@ try {
   decoded = jwt.verify(token, process.env.JWT_SECRET);
 
 } catch (error) {
+    console.log("JWT ERROR:", error.message);
   return {
     status: 401,
     jsonBody: {
-      message: "Invalid or expired token."
+      message: error.message
     }
   };
 }
