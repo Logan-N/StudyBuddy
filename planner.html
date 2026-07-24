@@ -74,8 +74,9 @@
 
     plannerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-
+	
       const date = document.getElementById('eventDate').value;
+	  const activityType = document.getElementById('activityType').value;
       const title = document.getElementById('eventTitle').value;
       const notes = document.getElementById('eventNotes').value;
 
@@ -88,6 +89,7 @@
           body: JSON.stringify({
             userId: 1,
             date,
+			activityType,
             title,
             notes
           })
