@@ -1,0 +1,83 @@
+const { app } = require("@azure/functions");
+const { getConnection, sql } = require("../../database");
+
+app.http("planner", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: async (request) => {
+    try {
+      const pool = await getConnection();
+      const body = await request.json();
+
+      const userId = body.userId;
+      const activityDate = body.date;
+      const activityTitle = body.title;
+      const notes = body.notes || "none"; // just to show there aren't any default notes
+// if user id activity date or activity title is missing you return 400 error (which is basically a bad input  or missing field)
+      if (!userId || !activityDate || !activityTitle) {
+        return {
+          status: 400,
+          body: "Missing required fields"
+        };
+      }
+// look up planner using userID
+      const plannerResult = await pool.request()
+        .input("userId", sql.Int, userId)
+        .query(`
+          SELECT PlannerID
+          FROM Planner
+          WHERE UserID = @userId
+        `);
+
+      let plannerId;
+// check if planner exists for the user, if not create a new planner and get the new planner ID
+      if (plannerResult.recordset.length === 0) {
+        const newPlanner = await pool.request()
+          .input("userId", sql.Int, userId)
+          .query(`
+            INSERT INTO Planner (UserID)
+            VALUES (@userId);
+            SELECT SCOPE_IDENTITY() AS PlannerID;
+          `);
+
+        plannerId = newPlanner.recordset[0].PlannerID;
+      } else {
+        plannerId = plannerResult.recordset[0].PlannerID;
+      }
+//insert the activity into the PlannerActivity table
+      await pool.request()
+        .input("plannerId", sql.Int, plannerId)
+        .input("activityType", sql.Char(3), "EVT")
+        .input("activityDate", sql.Date, activityDate)
+        .input("activityTitle", sql.VarChar(30), activityTitle)
+        .input("notes", sql.NVarChar(sql.MAX), notes)
+        .query(`
+          INSERT INTO PlannerActivity (
+            PlannerID,
+            ActivityType,
+            ActivityDate,
+            ActivityTitle,
+            Notes
+          )
+          VALUES (
+            @plannerId,
+            @activityType,
+            @activityDate,
+            @activityTitle,
+            @notes
+          )
+        `);
+
+      return {
+        status: 200,
+        body: JSON.stringify({ success: true })
+      };
+    } catch (error) {
+        // return a server error
+      return {
+        status: 500,
+        body: "Planner save failed: " + error.message
+      };
+    }
+  }
+});
