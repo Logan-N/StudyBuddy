@@ -80,8 +80,7 @@ app.http("Login", {
             return {
                 status: 200,
                 jsonBody: {
-                    message: "Login successful.",
-                    token
+                    message: "Login successful."
                 }
             };
             
