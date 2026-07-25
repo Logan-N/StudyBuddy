@@ -10,7 +10,7 @@ app.http("Planner", {
     const pool = await getConnection();
 
   // Get JWT token from request header
-  const authHeader = request.headers.get("authorization");
+  const authHeader = request.headers.get("x-auth-token");
   console.log("Authorization Header:", authHeader);
   console.log("Secret exists:", !!process.env.JWT_SECRET);
 
@@ -25,7 +25,7 @@ app.http("Planner", {
   }
 
 // Remove "Bearer " from the token
-const token = authHeader.split(" ")[1];
+const token = authHeader;
 console.log("Token:", token);
 
 // Verify the token and decode it to get the user ID
