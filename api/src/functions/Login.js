@@ -60,11 +60,12 @@ app.http("Login", {
                 };
             }
 
-            //Create a token with the user's ID
-            const token = jwt.sign
             // Log the length and first 5 characters of the JWT secret for debugging
             console.log("LOGIN SECRET LENGTH:", process.env.JWT_SECRET.length);
             console.log("LOGIN SECRET START:", process.env.JWT_SECRET.substring(0,5));
+
+            //Create a token with the user's ID
+            const token = jwt.sign
             (
                 { 
                     userID: user.recordset[0].UserID,
@@ -80,7 +81,8 @@ app.http("Login", {
             return {
                 status: 200,
                 jsonBody: {
-                    message: "Login successful."
+                    message: "Login successful.",
+                    token: token
                 }
             };
             
