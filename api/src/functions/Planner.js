@@ -33,6 +33,8 @@ let decoded;
 
 try {
   // Verify token is valid
+  console.log("PLANNER SECRET LENGTH:", process.env.JWT_SECRET.length);
+  console.log("PLANNER SECRET START:", process.env.JWT_SECRET.substring(0,5));  
   decoded = jwt.verify(token, process.env.JWT_SECRET);
 
 } catch (error) {
