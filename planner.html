@@ -66,10 +66,28 @@
   <script>
     //Transfer someone to index.html if they are not logged in
     const token = localStorage.getItem("jwt");
-
-    if (!token) {
-        window.location.href = "index.html";
+    // If there is no token, redirect to index.html
+    if (!token) 
+    {
+    window.location.href = "index.html";
     }
+    // If there is a token, check if it is expired
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+        // If the token is expired, remove it from localStorage and redirect to index.html
+        if (payload.exp * 1000 < Date.now()) 
+        {
+          localStorage.removeItem("jwt");
+          window.location.href = "index.html";
+        }
+
+      }
+      // If there is a token error, remove it from localStorage and redirect to index.html
+      catch 
+      {
+        localStorage.removeItem("jwt");
+        window.location.href = "index.html";
+      }
 
 
     const plannerForm = document.getElementById('plannerForm');
