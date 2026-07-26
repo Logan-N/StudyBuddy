@@ -40,17 +40,88 @@
         <a class="button-link" href="planner.html">Open Planner</a>
       </div>
     </section>
-	<section class="events">
-      <h1>Upcoming Events</h1>
-      <p>No Events Yet. Create Some in the Planner!</p>
-	</div>
+      <section class="card">
+        <h3>Upcoming Events</h3>
+        <div class="planner-list" id="plannerList">
+          <div class="small">No events yet.</div>
+        </div>
+      </section>
 <script>
+
     //Transfer someone to index.html if they are not logged in
     const token = localStorage.getItem("jwt");
 
     if (!token) {
       window.location.href = "index.html";
     }
+
+ 	  // Load planner events from the database
+	  async function loadPlanner()
+    {
+ 	  try
+      {
+
+   		 // Call the GET request to the Planner Azure Function
+       const response = await fetch("/api/Planner", 
+       {
+          method: "GET",
+          headers: 
+        {
+          "x-auth-token": localStorage.getItem("jwt")
+        }
+      }
+    );
+    // Parse the response as JSON
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message);
+    }
+
+    events = result.map(event => ({
+    date: event.ActivityDate.split("T")[0],
+    title: event.ActivityTitle,
+    notes: event.Notes
+    }));
+
+    // Display the events and calendar
+    renderEvents();
+
+  	} 
+    catch (error) 
+	    {
+        console.error("Failed to load planner:", error);
+  	  }
+    }
+      //Render the events in Upcoming Events section
+      function renderEvents() {
+      plannerList.innerHTML = '';
+
+      if (events.length === 0) {
+        plannerList.innerHTML = '<div class="small">No events yet.</div>';
+        renderCalendar();
+        return;
+      }
+
+      events.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach((ev) => {
+        const div = document.createElement('div');
+        div.className = 'event-card';
+        div.innerHTML = `
+          <div class="event-icon">📅</div>
+          <div class="event-content">
+            <h4>${escapeHtml(ev.title)}</h4>
+            <div class="event-date">${escapeHtml(formatDate(ev.date))}${ev.notes ? ' · ' + escapeHtml(ev.notes) : ''}</div>
+          </div>
+        `;
+        plannerList.appendChild(div);
+      });
+    }
+    // Render the calendar in the Upcoming Events section
+    window.addEventListener("load", async () => {
+
+    // Load events from SQL
+    await loadPlanner();
+    });
 </script>
 </body>
 </html>
