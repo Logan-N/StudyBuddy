@@ -93,8 +93,6 @@
         if (!response.ok) {
         throw new Error(result.message);
         }
-        // If the response is ok, alert the user with the success message
-        alert(result.message);
         // Store the token in local storage and redirect to home.html
         localStorage.setItem("jwt", result.token);
         window.location.href = "home.html";
