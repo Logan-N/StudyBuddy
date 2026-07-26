@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="style.css">
+    <title>Study Buddy - Account</title>
+</head>
+
+<body>
+<div class="container">
+
+    <header>
+        <h1>Study Buddy</h1>
+        <nav>
+            <a href="home.html">Home</a>
+            <a href="quiz.html">Quiz</a>
+            <a href="planner.html">Planner</a>
+            <a class="active" href="account.html">Account</a>
+        </nav>
+    </header>
+
+    <h2 class="page-title">My Account</h2>
+
+    <div class="layout">
+
+
+        <section class="card">
+            <h3>Account Information</h3>
+
+            <p><strong>Email</strong></p>
+            <p id="email">Loading</p>
+
+            <p><strong>User ID</strong></p>
+            <p id="userID">Loading</p>
+        
+            <button id="logoutButton">
+                Logout
+            </button>
+
+        </section>
+
+  
+        <section class="card">
+
+            <h3>Change Password</h3>
+
+            <form id="passwordForm">
+
+                <label for="currentPassword">Current Password</label>
+                <input
+                    type="password"
+                    id="currentPassword"
+                    required
+                >
+
+                <label for="newPassword">New Password</label>
+                <input
+                    type="password"
+                    id="newPassword"
+                    required
+                >
+
+                <label for="confirmPassword">Confirm New Password</label>
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    required
+                >
+
+                <button type="submit">
+                    Change Password
+                </button>
+
+            </form>
+
+        </section>
+
+    </div>
+
+</div>
+
+<script>
+
+// Load account info
+async function loadAccount() {
+    try {
+
+        const response = await fetch("/api/Account", {
+
+            method: "GET",
+
+            headers: {
+                "X-Auth-Token": localStorage.getItem("jwt")
+            }
+
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message);
+        }
+
+        document.getElementById("email").textContent = result.email;
+        document.getElementById("userID").textContent = result.userID;
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+    // Change password
+    document.getElementById("passwordForm").addEventListener("submit", async (e) => {
+    // Prevent default form submission
+    e.preventDefault();
+    
+    // Get form values
+    const currentPassword = document.getElementById("currentPassword").value;
+    const newPassword = document.getElementById("newPassword").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+
+    // Check if new password and confirm password match
+    if (newPassword !== confirmPassword) {
+        alert("Passwords do not match.");
+        return;
+    }
+    try {
+
+        const response = await fetch("/api/Account", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json",
+                "X-Auth-Token": localStorage.getItem("jwt")
+
+            },
+
+            body: JSON.stringify({
+
+                currentPassword,
+                newPassword
+
+            })
+
+        });
+        // Get the response JSON
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message);
+        }
+
+        alert(result.message);
+
+        document.getElementById("passwordForm").reset();
+
+    }
+
+    catch (error) {
+
+        alert(error.message);
+
+    }
+
+});
+
+// Logout
+document.getElementById("logoutButton").addEventListener("click", () => {
+
+    localStorage.removeItem("jwt");
+
+    window.location.href = "index.html";
+
+});
+
+loadAccount();
+
+</script>
+
+</body>
+</html>
