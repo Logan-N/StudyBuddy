@@ -93,17 +93,43 @@
         console.error("Failed to load planner:", error);
   	  }
     }
+
+      // Render the calendar in the Upcoming Events section
+      function escapeHtml(s) 
+      {
+        return String(s).replace(/[&<>"']/g, (c) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+      }[c]));
+    }
+
+      // Format the date in a more readable format
+      function formatDate(dateString) 
+      {
+        if (!dateString) return '';
+        const date = new Date(dateString + 'T00:00:00');
+        return date.toLocaleDateString(undefined, {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+      });
+    }
+
       //Render the events in Upcoming Events section
       function renderEvents() {
-      plannerList.innerHTML = '';
+        plannerList.innerHTML = '';
 
-      if (events.length === 0) {
-        plannerList.innerHTML = '<div class="small">No events yet.</div>';
-        renderCalendar();
-        return;
-      }
+        if (events.length === 0) {
+          plannerList.innerHTML = '<div class="small">No events yet.</div>';
+          renderCalendar();
+          return;
+        }
 
-      events.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach((ev) => {
+        events.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach((ev) => {
         const div = document.createElement('div');
         div.className = 'event-card';
         div.innerHTML = `
@@ -116,6 +142,7 @@
         plannerList.appendChild(div);
       });
     }
+
     // Render the calendar in the Upcoming Events section
     window.addEventListener("load", async () => {
 
