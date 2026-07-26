@@ -56,6 +56,12 @@
   </div>
 
  <script>
+    //Transfer someone to home.html if they are already logged in
+    const token = localStorage.getItem("jwt");
+
+    if (token) {
+    window.location.href = "home.html";
+    }
      // Get the form element by its ID and store in the register variable
     const login = document.getElementById("LoginForm");
 
