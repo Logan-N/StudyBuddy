@@ -63,25 +63,28 @@
     window.location.href = "home.html";
     }
 
+     // Get the form element by its ID and store in the register variable
+    const login = document.getElementById("LoginForm");
     // Add an event listener to the form that listens for the submit event
     login.addEventListener("submit", async (event) => {
 
-      // Prevent the default form submission from being sent
-      event.preventDefault();
+    // Prevent the default form submission from being sent
+    event.preventDefault();
 
-      // get the values of the email and password input fields and store them in a variable
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+    // get the values of the email and password input fields and store them in a variable
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-      try {
-        // Send the Login Form data to the server
-        const response = await fetch("/api/Login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          // Send the email and password as a JSON string in the request body
-          body: JSON.stringify({ email, password }),
+    try {
+      // Send the Login Form data to the server
+      const response = await fetch("/api/Login", {
+        method: "POST",
+        headers: 
+        {
+          "Content-Type": "application/json",
+        },
+        // Send the email and password as a JSON string in the request body
+        body: JSON.stringify({ email, password }),
         });
 
         // Return result
