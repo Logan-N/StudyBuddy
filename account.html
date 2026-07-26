@@ -81,9 +81,15 @@
 </div>
 
 <script>
+   //Transfer someone to index.html if they are not logged in
+    const token = localStorage.getItem("jwt");
 
-// Load account info
-async function loadAccount() {
+    if (!token) {
+        window.location.href = "index.html";
+    }
+
+    // Load account info
+    async function loadAccount() {
     try {
 
         const response = await fetch("/api/Account", {

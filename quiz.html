@@ -14,7 +14,7 @@
         <a href="home.html">Home</a>
         <a class ="active" href="quiz.html">Quiz</a>
         <a href="planner.html">Planner</a>
-		<a href="login.html">Account</a>
+		    <a href="account.html">Account</a>
       </nav>
     </header>
 
@@ -39,5 +39,15 @@
       </aside>
     </div>
   </div>
+  <script>
+      //Transfer someone to index.html if they are not logged in
+      const token = localStorage.getItem("jwt");
+
+      if (!token) {
+        window.location.href = "index.html";
+      }
+      
+  </script>
+
 </body>
 </html>

@@ -11,8 +11,8 @@
     <header>
       <h1>Study Buddy</h1>
       <nav>
-        <a class ="active" href="index.html">Home</a>
-        <a href="login.html">Login</a>
+        <a href="index.html">Home</a>
+        <a class ="active" href="login.html">Login</a>
 		    <a href="register.html">Sign Up</a>
       </nav>
     </header>
@@ -43,6 +43,13 @@
   </div>
 
   <script>
+    //Transfer someone to home.html if they are already logged in
+    const token = localStorage.getItem("jwt");
+
+    if (token) {
+    window.location.href = "home.html";
+    }
+
      // Get the form element by its ID and store in the register variable
     const login = document.getElementById("LoginForm");
 
