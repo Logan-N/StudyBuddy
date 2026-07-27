@@ -1,7 +1,7 @@
 //Connect Azure Functions
 const { app } = require("@azure/functions");
 //Connect to Database and SQL Server
-const { getConnection, sql } = require("../../database");
+const { getConnection, sql } = require("../../../database");
 
 app.http("SaveMultipleChoice", {
    //Uses POST request to send data to the database

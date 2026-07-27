@@ -1,6 +1,6 @@
 const { app } = require("@azure/functions");
 //Connect to Database and SQL Server
-const { getConnection, sql } = require("../../database");
+const { getConnection, sql } = require("../../../database");
 
 app.http("SaveFlashcard", {
    //Uses POST request to send data to the database
