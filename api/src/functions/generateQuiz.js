@@ -303,33 +303,33 @@ Return JSON ONLY:
                 await pool.request()
 
                 .input(
-                    "userID",
+                    "UserID",
                     sql.Int,
-                    userID
+                    UserID
                 )
 
                 .input(
-                    "title",
+                    "Title",
                     sql.VarChar,
-                    quiz.title
+                    quiz.Title
                 )
 
                 .input(
-                    "topic",
+                    "Topic",
                     sql.VarChar,
-                    quiz.topic
+                    quiz.Topic
                 )
 
                 .input(
-                    "difficulty",
+                    "Difficulty",
                     sql.VarChar,
-                    quiz.difficulty
+                    quiz.Difficulty
                 )
 
                 .input(
-                    "quizTypeID",
+                    "QuizTypeID",
                     sql.Char(3),
-                    quizTypeID
+                    quiz.QuizTypeID
                 )
 
                 .query(`
@@ -347,18 +347,18 @@ Return JSON ONLY:
 
                     VALUES
                     (
-                        @userID,
-                        @title,
-                        @topic,
-                        @difficulty,
-                        @quizTypeID
+                        @UserID,
+                        @Title,
+                        @Topic,
+                        @Difficulty,
+                        @QuizTypeID
                     )
 
                 `);
 
 
 
-            const quizID =
+            const QuizID =
                 quizInsert.recordset[0].QuizID;
 
 
@@ -369,15 +369,15 @@ Return JSON ONLY:
                 await pool.request()
 
                     .input(
-                        "quizID",
+                        "QuizID",
                         sql.Int,
-                        quizID
+                        QuizID
                     )
 
                     .input(
-                        "questionText",
+                        "QuestionText",
                         sql.VarChar,
-                        question.question
+                        question.QuestionText
                     )
 
                     .input(
@@ -406,10 +406,10 @@ Return JSON ONLY:
 
                         VALUES
                         (
-                            @quizID,
-                            @questionText,
-                            @options,
-                            @correctAnswer
+                            @QuizID,
+                            @QuestionText,
+                            @Options,
+                            @CorrectAnswer
                         )
 
                     `);
@@ -427,7 +427,7 @@ Return JSON ONLY:
                     message:
                         "Quiz generated successfully.",
 
-                    quizID
+                    QuizID
 
                 }
 
