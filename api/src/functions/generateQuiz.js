@@ -49,7 +49,7 @@ app.http("generateQuiz", {
             try {
                 user = jwt.verify(token, process.env.JWT_SECRET);
             } catch (error) {
-                context.log.error("JWT verification failed:", error.message);
+                context.log("ERROR - JWT verification failed:", error.message);
                 return {
                     status: 401,
                     jsonBody: { error: "Invalid or expired token." }
@@ -192,7 +192,7 @@ your entire response must be parseable as JSON matching this shape:
                     "Anthropic API request"
                 );
             } catch (error) {
-                context.log.error("Anthropic request failed:", error.message);
+                context.log("ERROR - Anthropic request failed:", error.message);
                 return {
                     status: 502,
                     jsonBody: { error: "Failed to reach the quiz generation service. Please try again." }
@@ -201,7 +201,7 @@ your entire response must be parseable as JSON matching this shape:
 
             if (!response.ok) {
                 const errorText = await response.text();
-                context.log.error("Anthropic API returned an error:", response.status, errorText);
+                context.log("ERROR - Anthropic API returned an error:", response.status, errorText);
                 return {
                     status: 502,
                     jsonBody: { error: "Quiz generation service returned an error. Please try again." }
@@ -212,7 +212,7 @@ your entire response must be parseable as JSON matching this shape:
             const generatedText = data?.content?.[0]?.text;
 
             if (!generatedText) {
-                context.log.error("Anthropic response missing expected content:", JSON.stringify(data));
+                context.log("ERROR - Anthropic response missing expected content:", JSON.stringify(data));
                 return {
                     status: 502,
                     jsonBody: { error: "Quiz generation service returned an unexpected response." }
@@ -228,7 +228,7 @@ your entire response must be parseable as JSON matching this shape:
             try {
                 quiz = JSON.parse(cleanJSON);
             } catch (error) {
-                context.log.error("Failed to parse generated quiz JSON:", error.message, cleanJSON.slice(0, 500));
+                context.log("ERROR - Failed to parse generated quiz JSON:", error.message, cleanJSON.slice(0, 500));
                 return {
                     status: 502,
                     jsonBody: { error: "Quiz generation produced an invalid response. Please try again." }
@@ -236,7 +236,7 @@ your entire response must be parseable as JSON matching this shape:
             }
 
             if (!Array.isArray(quiz.questions) || quiz.questions.length === 0) {
-                context.log.error("Generated quiz has no questions:", JSON.stringify(quiz).slice(0, 500));
+                context.log("ERROR - Generated quiz has no questions:", JSON.stringify(quiz).slice(0, 500));
                 return {
                     status: 502,
                     jsonBody: { error: "Quiz generation produced no questions. Please try again." }
@@ -250,7 +250,7 @@ your entire response must be parseable as JSON matching this shape:
             try {
                 pool = await withTimeout(getConnection(), 10000, "database connection");
             } catch (error) {
-                context.log.error("Database connection failed:", error.message);
+                context.log("ERROR - Database connection failed:", error.message);
                 return {
                     status: 503,
                     jsonBody: { error: "Could not connect to the database. Please try again shortly." }
@@ -302,7 +302,7 @@ your entire response must be parseable as JSON matching this shape:
                     const question = quiz.questions[i];
 
                     if (!question || !question.question || !question.answer) {
-                        context.log.error(`Skipping malformed question at index ${i}:`, JSON.stringify(question));
+                        context.log(`WARNING - Skipping malformed question at index ${i}:`, JSON.stringify(question));
                         continue;
                     }
 
@@ -338,12 +338,12 @@ your entire response must be parseable as JSON matching this shape:
                 await withTimeout(transaction.commit(), 10000, "transaction commit");
 
             } catch (dbError) {
-                context.log.error("Database write failed:", dbError.message, dbError.stack);
+                context.log("ERROR - Database write failed:", dbError.message, dbError.stack);
 
                 try {
                     await transaction.rollback();
                 } catch (rollbackError) {
-                    context.log.error("Rollback also failed:", rollbackError.message);
+                    context.log("ERROR - Rollback also failed:", rollbackError.message);
                 }
 
                 return {
@@ -363,7 +363,7 @@ your entire response must be parseable as JSON matching this shape:
         } catch (error) {
             // Catch-all for anything unexpected that slipped past the
             // targeted handlers above.
-            context.log.error("Unhandled error in generateQuiz:", error.message, error.stack);
+            context.log("ERROR - Unhandled error in generateQuiz:", error.message, error.stack);
             return {
                 status: 500,
                 jsonBody: { error: "Quiz generation failed. Please try again." }
