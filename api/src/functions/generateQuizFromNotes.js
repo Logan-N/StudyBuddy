@@ -17,7 +17,7 @@ app.http("generateQuizFromNotes", {
 
             return {
                 status: 401,
-                body: 
+                jsonBody:
                 {
                     error: "No authentication token provided."
                 }
@@ -36,7 +36,7 @@ app.http("generateQuizFromNotes", {
 
                 return {
                     status: 401,
-                    body: 
+                    jsonBody: 
                     {
                         error: "Invalid or expired token."
                     }

@@ -15,7 +15,7 @@ app.http("generateQuiz", {
         if (!token) {
             return {
                 status: 401,
-                body: {
+                jsonBody: {
                     error: "No authentication token provided."
                 }
             };
@@ -33,7 +33,7 @@ app.http("generateQuiz", {
             } catch (error) {
                 return {
                     status: 401,
-                    body: {
+                    jsonBody: {
                         error: "Invalid or expired token."
                     }
                 };
@@ -70,7 +70,7 @@ app.http("generateQuiz", {
 
                 return {
                     status: 400,
-                    body: {
+                    jsonBody: {
                         error: "Invalid quiz type."
                     }
                 };
@@ -279,7 +279,7 @@ const quiz = JSON.parse(
     return {
 
         status: 200,
-        body: {
+        jsonBody: {
             message: "Quiz generated successfully.",
             quizID,
         }
@@ -297,7 +297,7 @@ const quiz = JSON.parse(
     // Return a 500 error response with the error message if a quiz isn't generated successfully
     return {
         status: 500,
-        body: {
+        jsonBody: {
             error:
             error.message ||
             "Quiz generation failed."
