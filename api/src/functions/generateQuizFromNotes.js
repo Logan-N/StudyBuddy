@@ -200,7 +200,7 @@ Return JSON ONLY:
 		"content-type": "application/json"
 	},
 	body: JSON.stringify({
-		model: "claude-sonnet-4-6",
+		model: "claude-sonnet-4-20250514",
 		max_tokens: 1500,
 		messages: [
 			{
@@ -219,10 +219,6 @@ if (!response.ok)
 
 const data = await response.json();
 const quiz = JSON.parse(data.content[0].text);
-    // Parse the response content to extract the quiz data
-    const quiz = JSON.parse(
-    response.content[0].text
-    );
 
     // Insert the generated quiz into the Quizzes table and retrieve the inserted QuizID
     const quizInsert = await pool.request()

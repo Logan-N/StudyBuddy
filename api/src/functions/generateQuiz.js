@@ -144,7 +144,7 @@ Return JSON ONLY:
 		"content-type": "application/json"
 	},
 	body: JSON.stringify({
-		model: "claude-sonnet-4-6",
+		model: "claude-sonnet-4-20250514",
 		max_tokens: 1500,
 		messages: [
 			{
@@ -162,10 +162,12 @@ if (!response.ok)
 }
 
 const data = await response.json();
+
 const generatedQuiz = data.content[0].text;
 
-    // Parse the response content to extract the quiz data
-    const quiz = JSON.parse( response.content[0].text );
+const quiz = JSON.parse(
+	generatedQuiz
+);
 
      // Connect to the database
     const pool = await getConnection();
