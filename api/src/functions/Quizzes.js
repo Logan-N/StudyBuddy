@@ -53,7 +53,7 @@ app.http("Quizzes", {
                     ORDER BY CreatedDate DESC
                 `);
 
-            // Return the retrieved quiz in the response
+            // Return the retrieved quiz in the responses
             return {
                 status: 200,
                 jsonBody: {
