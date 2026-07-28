@@ -41,22 +41,60 @@ const config = {
 // Store of our database connection pool
 let pool;
 
+// Tracks the in-flight connection attempt so concurrent requests
+// don't race to create multiple pools at once.
+let connecting;
+
 
 // Function to connect to the database
 async function getConnection() {
 
-
-    // Check if we already created a connection pool, reuses if one is already active
-    if (!pool) {
-
-
-        // Create a new connection pool using our config settings
-        pool = await new sql.ConnectionPool(config).connect();
+    // If we have a pool AND it's still actually connected, reuse it.
+    if (pool && pool.connected) {
+        return pool;
     }
 
+    // If a pool exists but has disconnected (e.g. after a background
+    // error closed it), throw it away so we build a fresh one below.
+    if (pool && !pool.connected) {
+        console.error("Existing pool was disconnected — reconnecting.");
+        pool = null;
+    }
 
-    // Return the existing connection pool
-    return pool;
+    // If a connection attempt is already in progress, wait for it
+    // instead of starting a second one concurrently.
+    if (connecting) {
+        return connecting;
+    }
+
+    connecting = (async () => {
+
+        const newPool = new sql.ConnectionPool(config);
+
+        //Fixes Errror in the background pool error handler, which is called when the connection is lost
+        newPool.on("error", (err) => {
+            console.error("SQL pool background error:", err.message);
+            pool = null;
+        });
+
+        await newPool.connect();
+
+        pool = newPool;
+        connecting = null;
+
+        return pool;
+
+    })();
+    // Wait for the connection attempt to finish, and return the pool if successful.
+    try {
+        return await connecting;
+    } catch (err) {
+        // Reset so the next call retries instead of getting stuck
+        // waiting on a rejected promise forever.
+        connecting = null;
+        pool = null;
+        throw err;
+    }
 }
 
 

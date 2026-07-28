@@ -3,34 +3,51 @@ const jwt = require("jsonwebtoken");
 const { getConnection, sql } = require("../../database");
 
 app.http("generateQuiz", {
+
     methods: ["POST"],
     authLevel: "anonymous",
 
     handler: async (request, context) => {
 
-    try {
-        // Extract the authentication token from the request headers
-        const token = request.headers.get("x-auth-token");
-        // Check if the token is provided
-        if (!token) {
-            return {
-                status: 401,
-                jsonBody: {
-                    error: "No authentication token provided."
-                }
-            };
-        }
-
-        let user;
-        // Verify the token and extract the user information
         try {
-            // Verify the token using the secret key
-            user = jwt.verify(
-                token,
-                process.env.JWT_SECRET
-            );
-            // Error if the token is invalid or expired
+
+            // Extract authentication token
+            const token = request.headers.get("x-auth-token");
+
+            context.log("Token exists:", !!token);
+
+            if (!token) {
+
+                return {
+                    status: 401,
+                    jsonBody: {
+                        error: "No authentication token provided."
+                    }
+                };
+
+            }
+
+
+            let user;
+
+            // Verify JWT
+            try {
+
+                user = jwt.verify(
+                    token,
+                    process.env.JWT_SECRET
+                );
+
+                context.log("JWT verified:", user);
+
             } catch (error) {
+
+                context.log.error(
+                    "JWT ERROR:",
+                    error.message,
+                    error.stack
+                );
+
                 return {
                     status: 401,
                     jsonBody: {
@@ -39,33 +56,62 @@ app.http("generateQuiz", {
                 };
 
             }
-            // Extract the user ID from the verified token
+
+
+            // Extract user ID
             const userID = user.userID;
 
-            // Extract the request body and quiz parameters
+            context.log(
+                "User ID:",
+                userID
+            );
+
+
+            // Read request body
             const body = await request.json();
-            // Destructure the quiz parameters from the request body
+
+            context.log(
+                "Request body:",
+                body
+            );
+
+
             const {
                 title,
                 topic,
                 count,
                 type,
                 difficulty
+
             } = body;
 
-            // Maps quiz types to their corresponding IDs in the database
+
+            context.log(
+                "Quiz type received:",
+                type
+            );
+
+
             const quizTypeMap = {
+
                 multiple: "MCQ",
                 truefalse: "TFS",
                 fill: "FIB",
                 flashcard: "FLC",
                 short: "SHR"
+
             };
 
-            // Get the corresponding quiz type ID based on the provided type
+
             const quizTypeID = quizTypeMap[type];
 
-            // If the quiz type is invalid, return a 400 error response
+
+            context.log(
+                "Quiz type ID:",
+                quizTypeID
+            );
+
+
             if (!quizTypeID) {
 
                 return {
@@ -77,7 +123,7 @@ app.http("generateQuiz", {
 
             }
 
-            // Create the prompt for generating the quiz
+
             const prompt = `
 Generate a quiz titled "${title}".
 
@@ -135,180 +181,283 @@ Return JSON ONLY:
 }
 `;
 
-     // Send the prompt to the Anthropic API and receive the generated quiz
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-	method: "POST",
-	headers: {
-		"x-api-key": process.env.ANTHROPIC_API_KEY,
-		"anthropic-version": "2023-06-01",
-		"content-type": "application/json"
-	},
-	body: JSON.stringify({
-		model: "claude-sonnet-4-5",
-		max_tokens: 1500,
-		messages: [
-			{
-				role: "user",
-				content: prompt
-			}
-		]
-	})
-});
 
-    if (!response.ok)
-    {
-	    const error = await response.text();
-	    throw new Error(error);
-    }
-    const data = await response.json();
+            context.log(
+                "Sending request to Anthropic..."
+            );
 
-    const generatedQuiz = data.content[0].text;
 
-    const cleanJSON = generatedQuiz
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
+            context.log(
+                "Anthropic key exists:",
+                !!process.env.ANTHROPIC_API_KEY
+            );
 
-    const quiz = JSON.parse(cleanJSON);
 
-     // Connect to the database
-    const pool = await getConnection();
+            const response = await fetch(
+                "https://api.anthropic.com/v1/messages",
+                {
 
-    // Insert the generated quiz into the Quiz table and retrieve the inserted QuizID
-    const quizInsert = await pool.request()
-        .input(
-            "userID",
-            sql.Int,
-            userID
-        )
-        .input(
-            "title",
-            sql.VarChar(100),
-            quiz.title
-                )
+                    method: "POST",
 
-        .input(
-            "topic",
-             sql.VarChar(255),
-             quiz.topic
-        )
+                    headers: {
 
-        .input(
-            "difficulty",
-             sql.VarChar(20),
-             quiz.difficulty
-        )
+                        "x-api-key":
+                            process.env.ANTHROPIC_API_KEY,
 
-         .input(
-            "quizTypeID",
-            sql.Char(3),
-            quizTypeID
-        )
+                        "anthropic-version":
+                            "2023-06-01",
 
-        .query(`
-            INSERT INTO Quiz
-            (
-                UserID,
-                Title,
-                Topic,
-                Difficulty,
-                QuizTypeID
-            )
+                        "content-type":
+                            "application/json"
 
-            OUTPUT INSERTED.QuizID
+                    },
 
-            VALUES
-            (
-                @userID,
-                @title,
-                @topic,
-                @difficulty,
-                @quizTypeID
-            )
+                    body: JSON.stringify({
 
-        `);
+                        model:
+                            "claude-sonnet-4-5",
 
-     // Retrieve the QuizID of the newly inserted quiz
-    const quizID = quizInsert.recordset[0].QuizID;
+                        max_tokens:
+                            1500,
 
-    // Insert each question of the generated quiz into the Questions table
-     for (const question of quiz.questions || []) {
+                        messages: [
 
-        await pool.request()
-            .input(
-                "quizID",
-                sql.Int,
-                 quizID
-            )
-            .input(
-                "questionText",
-                sql.VarChar(sql.MAX),
-                question.question
-            )
-            .input(
-                "options",
-                 sql.VarChar(sql.MAX),
-                JSON.stringify(question.options || [])
-            )
-            .input(
-                "correctAnswer",
-                sql.VarChar(sql.MAX),
-                question.answer
-            )
+                            {
 
-            .query(`
-                INSERT INTO Questions
-                (
-                    QuizID,
-                    QuestionText,
-                    Options,
-                    CorrectAnswer
-                )
+                                role: "user",
 
-                VALUES
-                (
-                    @quizID,
-                    @questionText,
-                    @options,
-                    @correctAnswer
-                )
+                                content: prompt
 
-            `);
+                            }
+
+                        ]
+
+                    })
+
+                });
+
+
+            context.log(
+                "Anthropic response status:",
+                response.status
+            );
+
+
+            if (!response.ok) {
+
+                const error =
+                    await response.text();
+
+                context.log.error(
+                    "Anthropic API ERROR:",
+                    error
+                );
+
+                throw new Error(error);
 
             }
 
-    // Return a success response with the generated quiz and its ID
-    return {
 
-        status: 200,
-        jsonBody: {
-            message: "Quiz generated successfully.",
-            quizID,
+            const data =
+                await response.json();
+
+
+            context.log(
+                "Anthropic response received"
+            );
+
+
+            const generatedQuiz =
+                data.content[0].text;
+
+
+            const cleanJSON =
+                generatedQuiz
+                    .replace(/```json/g, "")
+                    .replace(/```/g, "")
+                    .trim();
+
+
+            const quiz =
+                JSON.parse(cleanJSON);
+
+
+
+            context.log(
+                "Quiz parsed successfully"
+            );
+
+
+            const pool =
+                await getConnection();
+
+
+            context.log(
+                "Database connected"
+            );
+
+
+            // quizID is declared here (outside the try block) so it's
+            // visible both inside the DB try/catch AND in the final
+            // return statement below.
+            let quizID;
+
+            try {
+
+                const quizInsert = await pool.request()
+                    .input(
+                        "userID",
+                        sql.Int,
+                        userID
+                    )
+                    .input(
+                        "title",
+                        sql.VarChar,
+                        quiz.title
+                    )
+                    .input(
+                        "topic",
+                        sql.VarChar,
+                        quiz.topic
+                    )
+                    .input(
+                        "difficulty",
+                        sql.VarChar,
+                        quiz.difficulty
+                    )
+                    .input(
+                        "quizTypeID",
+                        sql.Char(3),
+                        quizTypeID
+                    )
+                    .query(`
+                        INSERT INTO Quiz
+                        (
+                            UserID,
+                            Title,
+                            Topic,
+                            Difficulty,
+                            QuizTypeID
+                        )
+
+                        OUTPUT INSERTED.QuizID
+
+                        VALUES
+                        (
+                            @userID,
+                            @title,
+                            @topic,
+                            @difficulty,
+                            @quizTypeID
+                        )
+                    `);
+
+                quizID = quizInsert.recordset[0].QuizID;
+
+                context.log(
+                    "Quiz row inserted, ID: " + quizID
+                );
+
+                for (const [i, question] of (quiz.questions || []).entries()) {
+
+                    context.log(`Inserting question ${i + 1}...`);
+
+                    await pool.request()
+                        .input(
+                            "quizID",
+                            sql.Int,
+                            quizID
+                        )
+                        .input(
+                            "questionText",
+                            sql.VarChar,
+                            question.question
+                        )
+                        .input(
+                            "options",
+                            sql.VarChar,
+                            JSON.stringify(question.options || [])
+                        )
+                        .input(
+                            "correctAnswer",
+                            sql.VarChar,
+                            question.answer
+                        )
+                        .query(`
+                            INSERT INTO Questions
+                            (
+                                QuizID,
+                                QuestionText,
+                                Options,
+                                CorrectAnswer
+                            )
+
+                            VALUES
+                            (
+                                @quizID,
+                                @questionText,
+                                @options,
+                                @correctAnswer
+                            )
+                        `);
+
+                    context.log(`Question ${i + 1} inserted.`);
+
+                }
+
+            } catch (dbError) {
+
+                context.log.error(
+                    "DB STEP FAILED: " +
+                    (dbError && dbError.message ? dbError.message : String(dbError))
+                );
+
+                throw dbError;
+
+            }
+
+
+            // Return a success response with the generated quiz ID
+            return {
+
+                status: 200,
+
+                jsonBody: {
+
+                    message:
+                        "Quiz generated successfully.",
+
+                    quizID
+
+                }
+
+            };
+
+
+        } catch (error) {
+
+            context.log.error(
+                "QUIZ GENERATION FAILED:",
+                error.message,
+                error.stack
+            );
+
+            return {
+
+                status: 500,
+
+                jsonBody: {
+
+                    error:
+                        error.message ||
+                        "Quiz generation failed."
+
+                }
+
+            };
+
         }
 
-    };
-
-    // Catch any errors that occur during the quiz generation process
-    } catch (error) {
-
-    context.log.error(
-        "Quiz generation failed:",
-        error
-    );
-
-    // Return a 500 error response with the error message if a quiz isn't generated successfully
-    return {
-        status: 500,
-        jsonBody: {
-            error:
-            error.message ||
-            "Quiz generation failed."
-        }
-
-    };
-
-}
-
-}
+    }
 
 });
