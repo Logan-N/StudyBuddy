@@ -167,19 +167,19 @@ Return JSON ONLY:
         )
         .input(
             "title",
-            sql.NVarChar,
+            sql.VarChar,
             quiz.title
                 )
 
         .input(
             "topic",
-             sql.NVarChar,
+             sql.VarChar,
              quiz.topic
         )
 
         .input(
             "difficulty",
-             sql.NVarChar,
+             sql.VarChar,
              quiz.difficulty
         )
 
@@ -226,17 +226,17 @@ Return JSON ONLY:
             )
             .input(
                 "questionText",
-                sql.NVarChar,
+                sql.VarChar,
                 question.question
             )
             .input(
                 "options",
-                 sql.NVarChar,
+                 sql.VarChar,
                 JSON.stringify(question.options || [])
             )
             .input(
                 "correctAnswer",
-                sql.NVarChar,
+                sql.VarChar,
                 question.answer
             )
 

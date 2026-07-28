@@ -232,19 +232,19 @@ Return JSON ONLY:
 
         .input(
             "title",
-            sql.NVarChar,
+            sql.VarChar,
             quiz.title
         )
 
         .input(
             "topic",
-            sql.NVarChar,
+            sql.VarChar,
             quiz.topic
         )
 
         .input(
             "difficulty",
-            sql.NVarChar,
+            sql.VarChar,
             quiz.difficulty
         )
 
