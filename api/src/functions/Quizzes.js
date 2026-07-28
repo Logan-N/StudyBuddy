@@ -57,7 +57,7 @@ app.http("Quizzes", {
             return {
                 status: 200,
                 jsonBody: {
-                    quiz: result.recordset
+                    quizzes: result.recordset
                 }
             };
         }
