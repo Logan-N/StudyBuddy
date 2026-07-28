@@ -298,125 +298,38 @@ Return JSON ONLY:
             );
 
 
+            const pool = await getConnection();
+context.log("Database connected");
 
-            const quizInsert =
-                await pool.request()
+try {
+    const quizInsert = await pool.request()
+        .input("userID", sql.Int, userID)
+        .input("title", sql.VarChar, quiz.title)
+        .input("topic", sql.VarChar, quiz.topic)
+        .input("difficulty", sql.VarChar, quiz.difficulty)
+        .input("quizTypeID", sql.Char(3), quizTypeID)
+        .query(`INSERT INTO Quiz (UserID, Title, Topic, Difficulty, QuizTypeID)
+                OUTPUT INSERTED.QuizID
+                VALUES (@userID, @title, @topic, @difficulty, @quizTypeID)`);
+    context.log("Quiz row inserted, ID: " + quizInsert.recordset[0].QuizID);
 
-                .input(
-                    "userID",
-                    sql.Int,
-                    userID
-                )
+    const quizID = quizInsert.recordset[0].QuizID;
 
-                .input(
-                    "title",
-                    sql.VarChar,
-                    quiz.title
-                )
-
-                .input(
-                    "topic",
-                    sql.VarChar,
-                    quiz.topic
-                )
-
-                .input(
-                    "difficulty",
-                    sql.VarChar,
-                    quiz.difficulty
-                )
-
-                .input(
-                    "quizTypeID",
-                    sql.Char(3),
-                    quizTypeID
-                )
-
-                .query(`
-
-                    INSERT INTO Quiz
-                    (
-                        UserID,
-                        Title,
-                        Topic,
-                        Difficulty,
-                        QuizTypeID
-                    )
-
-                    OUTPUT INSERTED.QuizID
-
-                    VALUES
-                    (
-                        @userID,
-                        @title,
-                        @topic,
-                        @difficulty,
-                        @quizTypeID
-                    )
-
-                `);
-
-
-
-            const quizID =
-                quizInsert.recordset[0].QuizID;
-
-
-
-            for (const question of quiz.questions || []) {
-
-
-                await pool.request()
-
-                    .input(
-                        "quizID",
-                        sql.Int,
-                        quizID
-                    )
-
-                    .input(
-                        "questionText",
-                        sql.VarChar,
-                        question.question
-                    )
-
-                    .input(
-                        "options",
-                        sql.VarChar,
-                        JSON.stringify(
-                            question.options || []
-                        )
-                    )
-
-                    .input(
-                        "correctAnswer",
-                        sql.VarChar,
-                        question.answer
-                    )
-
-                    .query(`
-
-                        INSERT INTO Questions
-                        (
-                            QuizID,
-                            QuestionText,
-                            Options,
-                            CorrectAnswer
-                        )
-
-                        VALUES
-                        (
-                            @quizID,
-                            @questionText,
-                            @options,
-                            @correctAnswer
-                        )
-
-                    `);
-
-            }
-
-
+    for (const [i, question] of (quiz.questions || []).entries()) {
+        context.log(`Inserting question ${i + 1}...`);
+        await pool.request()
+            .input("quizID", sql.Int, quizID)
+            .input("questionText", sql.VarChar, question.question)
+            .input("options", sql.VarChar, JSON.stringify(question.options || []))
+            .input("correctAnswer", sql.VarChar, question.answer)
+            .query(`INSERT INTO Questions (QuizID, QuestionText, Options, CorrectAnswer)
+                    VALUES (@quizID, @questionText, @options, @correctAnswer)`);
+        context.log(`Question ${i + 1} inserted.`);
+    }
+} catch (dbError) {
+    context.log.error("DB STEP FAILED: " + (dbError && dbError.message ? dbError.message : String(dbError)));
+    throw dbError;
+}
 
             return {
 
