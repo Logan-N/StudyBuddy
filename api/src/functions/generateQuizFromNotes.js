@@ -1,8 +1,6 @@
 const { app } = require("@azure/functions");
-const Anthropic = require("@anthropic-ai/sdk");
 const jwt = require("jsonwebtoken");
 const { getConnection, sql } = require("../../database");
-
 
 app.http("generateQuizFromNotes", {
 
@@ -125,16 +123,6 @@ app.http("generateQuizFromNotes", {
 
                 .join("\n\n");
 
-
-
-            // Connects to the Anthropic API using the provided API key
-            const client = new Anthropic({
-
-                apiKey: process.env.ANTHROPIC_API_KEY
-
-            });
-
-
             // Create the prompt for generating the quiz
             const prompt = `
 You are an AI that generates quizzes based on user notes.
@@ -204,19 +192,33 @@ Return JSON ONLY:
 `;
 
     // Send the prompt to the Anthropic API and receive the generated quiz
-    const response = await client.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 2000,
-        messages: [
-            {
-                role: "user",
-                content: prompt
-            }
-        ]
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+	method: "POST",
+	headers: {
+		"x-api-key": process.env.ANTHROPIC_API_KEY,
+		"anthropic-version": "2023-06-01",
+		"content-type": "application/json"
+	},
+	body: JSON.stringify({
+		model: "claude-sonnet-4-6",
+		max_tokens: 1500,
+		messages: [
+			{
+				role: "user",
+				content: prompt
+			}
+		]
+	})
+});
 
-            });
+if (!response.ok)
+{
+	const error = await response.text();
+	throw new Error(error);
+}
 
-
+const data = await response.json();
+const quiz = JSON.parse(data.content[0].text);
     // Parse the response content to extract the quiz data
     const quiz = JSON.parse(
     response.content[0].text
