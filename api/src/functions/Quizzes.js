@@ -37,7 +37,7 @@ app.http("Quizzes", {
             // Extract the user ID from the verified token
             const connection = await getConnection();
 
-            // Query the database to retrieve quizzes for the authenticated user
+            // Query the database to retrieve quiz for the authenticated user
             const result = await connection.request()
                 .input("userID", sql.Int, user.userID)
                 .query(`
@@ -48,16 +48,16 @@ app.http("Quizzes", {
                         Difficulty,
                         QuizTypeID,
                         CreatedDate
-                    FROM Quizzes
+                    FROM Quiz
                     WHERE UserID = @userID
                     ORDER BY CreatedDate DESC
                 `);
 
-            // Return the retrieved quizzes in the response
+            // Return the retrieved quiz in the response
             return {
                 status: 200,
                 jsonBody: {
-                    quizzes: result.recordset
+                    quiz: result.recordset
                 }
             };
         }

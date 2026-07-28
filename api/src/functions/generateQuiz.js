@@ -172,7 +172,7 @@ const quiz = JSON.parse(
      // Connect to the database
     const pool = await getConnection();
 
-    // Insert the generated quiz into the Quizzes table and retrieve the inserted QuizID
+    // Insert the generated quiz into the Quiz table and retrieve the inserted QuizID
     const quizInsert = await pool.request()
         .input(
             "userID",
@@ -204,7 +204,7 @@ const quiz = JSON.parse(
         )
 
         .query(`
-            INSERT INTO Quizzes
+            INSERT INTO Quiz
             (
                 UserID,
                 Title,

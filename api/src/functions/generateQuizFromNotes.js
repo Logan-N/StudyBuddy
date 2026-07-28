@@ -220,7 +220,7 @@ if (!response.ok)
 const data = await response.json();
 const quiz = JSON.parse(data.content[0].text);
 
-    // Insert the generated quiz into the Quizzes table and retrieve the inserted QuizID
+    // Insert the generated quiz into the Quiz table and retrieve the inserted QuizID
     const quizInsert = await pool.request()
         .input(
             "userID",
@@ -253,7 +253,7 @@ const quiz = JSON.parse(data.content[0].text);
         )
 
         .query(`
-            INSERT INTO Quizzes
+            INSERT INTO Quiz
             (
                 UserID,
                 Title,
