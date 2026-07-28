@@ -146,7 +146,7 @@
   const token = localStorage.getItem("jwt");
 
   // If there is no token, redirect to index.html
-  if (!token) 
+  if (!token)
   {
     window.location.href = "index.html";
   }
@@ -156,7 +156,7 @@
     const payload = JSON.parse(atob(token.split(".")[1]));
 
       // If the token is expired, remove it from localStorage and redirect to index.html
-      if (payload.exp * 1000 < Date.now()) 
+      if (payload.exp * 1000 < Date.now())
         {
           localStorage.removeItem("jwt");
           window.location.href = "index.html";
@@ -164,7 +164,7 @@
       }
 
       // If there is a token error, remove it from localStorage and redirect to index.html
-      catch 
+      catch
       {
         localStorage.removeItem("jwt");
         window.location.href = "index.html";
@@ -179,17 +179,25 @@ quizForm.addEventListener(
   async (event) => {
   event.preventDefault();
 
+  // Grab the submit button so we can disable it while the request
+  // is in flight and prevent duplicate submissions.
+  const submitBtn = quizForm.querySelector("button[type='submit']");
+  const originalBtnText = submitBtn.textContent;
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Generating...";
+
   const title = document.getElementById("title").value;
   const topic = document.getElementById("topic").value;
   const count = Number(document.getElementById("qcount").value);
   const type = document.getElementById("type").value;
   const difficulty = document.getElementById("difficulty").value;
+
   try {
     // Make a POST request to the server to generate the quiz
     const response = await fetch("/api/generateQuiz",
     {
       method: "POST",
-      headers: 
+      headers:
       {
         "Content-Type": "application/json",
         "X-Auth-Token": token
@@ -206,13 +214,28 @@ quizForm.addEventListener(
 
       }
   );
-  // Parse the JSON response from the server
-  const result = await response.json();
-  // If the response is not OK, throw an error with the message from the server
-  if (!response.ok) 
-  {
-    throw new Error(result.error);
+
+  // Read the response as raw text first, since a failing/empty
+  // response body will throw on response.json() directly and
+  // produce an unhelpful "Unexpected end of JSON input" error with
+  // no indication of the actual status code or cause.
+  const rawText = await response.text();
+
+  let result;
+  try {
+    result = rawText ? JSON.parse(rawText) : {};
+  } catch (parseError) {
+    throw new Error(
+      `Server returned an unexpected response (status ${response.status}).`
+    );
   }
+
+  // If the response is not OK, throw an error with the message from the server
+  if (!response.ok)
+  {
+    throw new Error(result.error || `Request failed with status ${response.status}`);
+  }
+
   // If the quiz is generated successfully, show an alert and redirect to the quiz page
   alert("Quiz generated successfully!");
   // Redirect to the quiz page
@@ -223,7 +246,14 @@ quizForm.addEventListener(
   catch(error) {
     console.error(error);
     alert("Failed to generate quiz: " + error.message);
-        }
+  }
+
+  // Always re-enable the button, whether the request succeeded,
+  // failed, or we're about to navigate away.
+  finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalBtnText;
+  }
     }
 );
 </script>
