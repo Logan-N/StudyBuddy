@@ -182,7 +182,7 @@ function displayQuizzes(quizzes) {
       item.style.padding = "10px";
 
       item.style.cursor = "pointer";
-
+      // Set the inner HTML of the quiz item with quiz details
       item.innerHTML = `
         <strong>
             ${quiz.Title}
@@ -199,6 +199,10 @@ function displayQuizzes(quizzes) {
         <br>
           Created:
           ${new Date(quiz.CreatedDate).toLocaleDateString()}
+
+        <br>
+          Last score:
+          ${quiz.Score !== null ? `${quiz.Score}% (${quiz.CorrectAnswers}/${quiz.TotalQuestions})` : "Not taken yet"}
         `;
 
         // Add click event listener to select the quiz

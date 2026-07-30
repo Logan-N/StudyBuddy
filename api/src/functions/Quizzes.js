@@ -38,19 +38,30 @@ app.http("Quizzes", {
             const connection = await getConnection();
 
             // Query the database to retrieve quiz for the authenticated user
+            // Outer apply to get null if no score is available, so that the quiz is still returned
             const result = await connection.request()
                 .input("userID", sql.Int, user.userID)
                 .query(`
                     SELECT
-                        QuizID,
-                        Title,
-                        Topic,
-                        Difficulty,
-                        QuizTypeID,
-                        CreatedDate
-                    FROM Quiz
-                    WHERE UserID = @userID
-                    ORDER BY CreatedDate DESC
+                        q.QuizID,
+                        q.Title,
+                        q.Topic,
+                        q.Difficulty,
+                        q.QuizTypeID,
+                        q.CreatedDate,
+                        r.Score,
+                        r.CorrectAnswers,
+                        r.TotalQuestions,
+                        r.TakenAt
+                        FROM Quiz q
+                        OUTER APPLY (
+                    SELECT TOP 1 Score, CorrectAnswers, TotalQuestions, TakenAt
+                    FROM QuizResults
+                    WHERE QuizResults.QuizID = q.QuizID
+                    ORDER BY TakenAt DESC
+                    ) r
+                    WHERE q.UserID = @userID
+                     ORDER BY q.CreatedDate DESC
                 `);
 
             // Return the retrieved quiz in the responses
