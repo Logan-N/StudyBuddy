@@ -12,7 +12,8 @@ app.http("generateQuiz", {
             // grab the token from the header so we know who's making the quiz
             const token = request.headers.get("x-auth-token");
 
-            if (!token) {
+            if (!token) 
+            {
                 return {
                     status: 401,
                     jsonBody: { error: "No authentication token provided." }
@@ -36,7 +37,8 @@ app.http("generateQuiz", {
             const { title, topic, count, type, difficulty } = body;
 
             // maps the dropdown values from the form to the DB codes
-            const quizTypeMap = {
+            const quizTypeMap = 
+            {
                 multiple: "MCQ",
                 truefalse: "TFS",
                 fill: "FIB",
@@ -46,7 +48,8 @@ app.http("generateQuiz", {
 
             const quizTypeID = quizTypeMap[type];
 
-            if (!quizTypeID) {
+            if (!quizTypeID) 
+            {
                 return {
                     status: 400,
                     jsonBody: { error: "Invalid quiz type." }
@@ -125,28 +128,32 @@ Return JSON ONLY, no markdown code fences:
                     messages: [{ role: "user", content: prompt }]
                 })
             });
-
-            if (!response.ok) {
+            
+            // check if the response from Anthropic is ok, if not throw an error
+            if (!response.ok) 
+            {
                 const errorText = await response.text();
                 context.log("Anthropic API error:", errorText);
                 throw new Error("Quiz generation service failed.");
             }
 
+            // parse the response from Anthropic and extract the generated quiz
             const data = await response.json();
             const generatedText = data.content[0].text;
 
-            // Claude sometimes wraps its JSON in ```json fences even when told not to,
-            // so strip those out before parsing
+            // clean up the response to make sure it's valid JSON
             const cleanJSON = generatedText
                 .replace(/```json/g, "")
                 .replace(/```/g, "")
                 .trim();
 
+            // parse the JSON to make sure it's valid
             const quiz = JSON.parse(cleanJSON);
 
             // connect to the DB and save everything
             const pool = await getConnection();
 
+            // insert the quiz into the database and get the new quizID
             const quizInsert = await pool.request()
                 .input("userID", sql.Int, userID)
                 .input("title", sql.VarChar(100), quiz.title)
@@ -159,19 +166,26 @@ Return JSON ONLY, no markdown code fences:
                     VALUES (@userID, @title, @topic, @difficulty, @quizTypeID, GETDATE())
                 `);
 
+            // get the quizID of the newly created quiz
             const quizID = quizInsert.recordset[0].QuizID;
 
+            //Variable for questions and sets the order of the questions in the quiz
+            const questions = quiz.questions || [];
+
             // loop through and insert each question one at a time
-            for (const question of quiz.questions || []) {
+            for (let i = 0; i < questions.length; i++) 
+            {
+                const question = questions[i];
                 await pool.request()
-                    .input("quizID", sql.Int, quizID)
-                    .input("questionText", sql.VarChar(sql.MAX), question.question)
-                    .input("options", sql.VarChar(sql.MAX), JSON.stringify(question.options || []))
-                    .input("correctAnswer", sql.VarChar(sql.MAX), question.answer)
-                    .query(`
-                        INSERT INTO Questions (QuizID, QuestionText, Options, CorrectAnswer, CreatedDate)
-                        VALUES (@quizID, @questionText, @options, @correctAnswer, GETDATE())
-                    `);
+                .input("quizID", sql.Int, quizID)
+                .input("questionNumber", sql.Int, i + 1)
+                .input("questionText", sql.VarChar(sql.MAX), question.question)
+                .input("options", sql.VarChar(sql.MAX), JSON.stringify(question.options || []))
+                .input("correctAnswer", sql.VarChar(sql.MAX), question.answer)
+                .query(`
+                    INSERT INTO Questions (QuizID, QuestionNumber, QuestionText, Options, CorrectAnswer, CreatedDate)
+                    VALUES (@quizID, @questionNumber, @questionText, @options, @correctAnswer, GETDATE())
+                `);
             }
 
             return {
