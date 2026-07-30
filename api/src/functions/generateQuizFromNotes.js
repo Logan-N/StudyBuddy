@@ -28,12 +28,6 @@ async function extractText(file, extension) {
     }
     //if pdf, use pdf-parse to extract the text
     if (extension === ".pdf") {
-        //imports unpdf to extract text from pdfs
-        const { getDocumentProxy, extractText: extractPdfText } = await import("unpdf");
-        // get the pdf document proxy and extract the text from it
-        const pdf = await getDocumentProxy(new Uint8Array(buffer));
-        // extract the text from the pdf and merge all pages into a single string
-        const { text } = await extractPdfText(pdf, { mergePages: true });
     return text;
 }
 
