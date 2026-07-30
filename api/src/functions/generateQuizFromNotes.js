@@ -22,7 +22,6 @@ async function extractText(file, extension) {
 }
 
     throw new Error("Unsupported file type.");
-}
 
 // generates a quiz based on the user's uploaded notes
 app.http("generateQuizFromNotes", {
