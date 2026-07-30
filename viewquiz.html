@@ -479,6 +479,11 @@
     `;
   }
 
+  //Removes Extra letters from beginning of the answers in Multiple choice. Ex: A) A)
+  function stripLeadingLetter(optionText) {
+    return String(optionText).replace(/^[A-D][).]\s*/i, "");
+  }
+
   // Load the quiz when the page loads
   loadQuiz();
 </script>
