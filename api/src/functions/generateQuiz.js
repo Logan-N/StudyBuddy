@@ -31,12 +31,14 @@ app.http("generateQuiz", {
                 };
             }
 
+            // extract the userID from the token so we can associate the quiz with the user
             const userID = user.userID;
 
+            // parse the request body to get the quiz parameters
             const body = await request.json();
             const { title, topic, count, type, difficulty } = body;
 
-            // maps the dropdown values from the form to the DB codes
+            // maps the quiz types to the 3 letter codes used in the database
             const quizTypeMap = 
             {
                 multiple: "MCQ",
@@ -45,7 +47,8 @@ app.http("generateQuiz", {
                 flashcard: "FLC",
                 short: "SHR"
             };
-
+            
+            // get the quizTypeID from the map based on the type provided in the request
             const quizTypeID = quizTypeMap[type];
 
             if (!quizTypeID) 

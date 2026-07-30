@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+  <title>Study Buddy - Generate Quiz From Notes</title>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+
+        <h1>Study Buddy</h1>
+        <nav>
+            <a href="home.html">Home</a>
+            <a href="quiz.html">Quiz</a>
+            <a href="planner.html">Planner</a>
+            <a href="account.html">Account</a>
+        </nav>
+
+    </header>
+
+    <h2 class="page-title">Quiz Generator</h2>
+
+    <div class="layout">
+
+        <section class="card">
+
+            <h3>Create a Quiz</h3>
+
+            <form id="quizForm">
+
+                <label for="notesFile">
+                    Notes File (PDF, DOCX, or TXT)
+                </label>
+
+                <input
+                    id="notesFile"
+                    name="notesFile"
+                    type="file"
+                    accept=".pdf,.docx,.txt"
+                    required
+                >
+                <label for="qcount">
+                    Number of Questions
+                </label>
+
+                <input
+                    id="qcount"
+                    name="qcount"
+                    type="number"
+                    min="1"
+                    max="50"
+                    value="5"
+                >
+                <label for="type">
+                    Question Type
+                </label>
+
+                <select id="type" name="type">
+
+                    <option value="multiple">
+                        Multiple Choice
+                    </option>
+
+                    <option value="short">
+                        Short Answer
+                    </option>
+
+                    <option value="fill">
+                        Fill in the Blank
+                    </option>
+
+                    <option value="flashcard">
+                        Flashcard
+                    </option>
+
+                    <option value="truefalse">
+                        True / False
+                    </option>
+
+                </select>
+
+                <label for="difficulty">
+                    Difficulty
+                </label>
+
+                <select id="difficulty">
+
+                    <option value="easy">
+                        Easy
+                    </option>
+
+                    <option value="medium" selected>
+                        Medium
+                    </option>
+
+                    <option value="hard">
+                        Hard
+                    </option>
+
+                </select>
+
+                <button type="submit">
+                    Generate Quiz
+                </button>
+
+                <a class="button-link" href="quiz.html">
+                    Cancel
+                </a>
+
+            </form>
+
+        </section>
+
+        <aside class="card">
+
+            <h3>Generate Quiz</h3>
+
+            <p>
+                Your AI-generated quiz will be saved to your account.
+            </p>
+
+        </aside>
+
+    </div>
+
+</div>
+
+
+<script>
+  //Transfer someone to index.html if they are not logged in
+  const token = localStorage.getItem("jwt");
+
+  // If there is no token, redirect to index.html
+  if (!token)
+  {
+    window.location.href = "index.html";
+  }
+
+  // If there is a token, check if it is expired
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+
+      // If the token is expired, remove it from localStorage and redirect to index.html
+      if (payload.exp * 1000 < Date.now())
+        {
+          localStorage.removeItem("jwt");
+          window.location.href = "index.html";
+        }
+      }
+
+      // If there is a token error, remove it from localStorage and redirect to index.html
+      catch
+      {
+        localStorage.removeItem("jwt");
+        window.location.href = "index.html";
+      }
+
+// Handle form submission
+const quizForm = document.getElementById("quizForm");
+
+// Add an event listener for the form submission
+quizForm.addEventListener(
+    "submit",
+    async (event) => {
+    event.preventDefault();
+
+    //Disable submit button when generating quiz to prevent multiple submissions
+    const submitBtn = quizForm.querySelector("button[type='submit']");
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Generating...";
+
+    const file = document.getElementById("notesFile").files[0];
+    const count = Number(document.getElementById("qcount").value);
+    const type = document.getElementById("type").value;
+    const difficulty = document.getElementById("difficulty").value;
+    // Create a FormData object to send the file and other data
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("count", count);
+    formData.append("type", type);
+    formData.append("difficulty", difficulty);
+
+    try {
+        // Make a POST request to the server to generate the quiz
+        const response = await fetch("/api/generateQuizFromNotes",
+        {
+            method: "POST",
+            headers:
+        {
+            "X-Auth-Token": token
+        },
+            body: formData
+        }
+    );
+
+    // Read the response as text first incase it's not valid JSON (e.g., an error message)
+    const rawText = await response.text();
+
+    let result;
+    try {
+        result = rawText ? JSON.parse(rawText) : {};
+  } catch (parseError) {
+    throw new Error(`Server returned an unexpected response (status ${response.status}).`);
+  }
+
+    // If the response is not OK, throw an error with the message from the server
+    if (!response.ok)
+    {
+        throw new Error(result.error || `Request failed with status ${response.status}`);
+    }
+
+    // If the quiz is generated successfully, show an alert and redirect to the quiz page
+    alert("Quiz generated successfully!");
+    // Redirect to the quiz page
+    window.location.href ="quiz.html";
+    }
+
+    // If an error occurs during the request, log it and show an alert to the user
+    catch(error) {
+        console.error(error);
+        alert("Failed to generate quiz: " + error.message);
+  }
+
+    // Always re-enable the button, whether the request succeeded,
+    // failed, or we're about to navigate away.
+    finally 
+    {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+    }
+    }
+);
+</script>
+
+</body>
+</html>

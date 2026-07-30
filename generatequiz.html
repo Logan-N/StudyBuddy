@@ -175,85 +175,80 @@ const quizForm = document.getElementById("quizForm");
 
 // Add an event listener for the form submission
 quizForm.addEventListener(
-  "submit",
-  async (event) => {
-  event.preventDefault();
+    "submit",
+    async (event) => {
+    event.preventDefault();
 
-  // Grab the submit button so we can disable it while the request
-  // is in flight and prevent duplicate submissions.
-  const submitBtn = quizForm.querySelector("button[type='submit']");
-  const originalBtnText = submitBtn.textContent;
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Generating...";
+    //Disable submit button when generating quiz to prevent multiple submissions
+    const submitBtn = quizForm.querySelector("button[type='submit']");
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Generating...";
 
-  const title = document.getElementById("title").value;
-  const topic = document.getElementById("topic").value;
-  const count = Number(document.getElementById("qcount").value);
-  const type = document.getElementById("type").value;
-  const difficulty = document.getElementById("difficulty").value;
+    const title = document.getElementById("title").value;
+    const topic = document.getElementById("topic").value;
+    const count = Number(document.getElementById("qcount").value);
+    const type = document.getElementById("type").value;
+    const difficulty = document.getElementById("difficulty").value;
 
-  try {
-    // Make a POST request to the server to generate the quiz
-    const response = await fetch("/api/generateQuiz",
-    {
-      method: "POST",
-      headers:
-      {
-        "Content-Type": "application/json",
-        "X-Auth-Token": token
-      },
+    try {
+        // Make a POST request to the server to generate the quiz
+        const response = await fetch("/api/generateQuiz",
+        {
+            method: "POST",
+            headers:
+        {
+            "Content-Type": "application/json",
+            "X-Auth-Token": token
+        },
 
       // Send the quiz details in the request body as JSON
-      body: JSON.stringify({
-        title,
-        topic,
-        count,
-        type,
-        difficulty
-      })
+        body: JSON.stringify({
+            title,
+            topic,
+            count,
+            type,
+            difficulty
+        })
 
-      }
-  );
-
-  // Read the response as raw text first, since a failing/empty
-  // response body will throw on response.json() directly and
-  // produce an unhelpful "Unexpected end of JSON input" error with
-  // no indication of the actual status code or cause.
-  const rawText = await response.text();
-
-  let result;
-  try {
-    result = rawText ? JSON.parse(rawText) : {};
-  } catch (parseError) {
-    throw new Error(
-      `Server returned an unexpected response (status ${response.status}).`
+        }
     );
+
+    // Read the response as text first incase it's not valid JSON (e.g., an error message)
+    const rawText = await response.text();
+
+    let result;
+    try {
+        result = rawText ? JSON.parse(rawText) : {};
+    } catch (parseError) {
+        throw new Error(`Server returned an unexpected response (status ${response.status}).`);
   }
 
-  // If the response is not OK, throw an error with the message from the server
-  if (!response.ok)
-  {
-    throw new Error(result.error || `Request failed with status ${response.status}`);
-  }
+    // If the response is not OK, throw an error with the message from the server
+    if (!response.ok)
+    {
+        throw new Error(result.error || `Request failed with status ${response.status}`);
+    }
 
-  // If the quiz is generated successfully, show an alert and redirect to the quiz page
-  alert("Quiz generated successfully!");
-  // Redirect to the quiz page
-  window.location.href ="quiz.html";
-  }
+    // If the quiz is generated successfully, show an alert and redirect to the quiz page
+    alert("Quiz generated successfully!");
+    // Redirect to the quiz page
+    window.location.href ="quiz.html";
+    }
 
-  // If an error occurs during the request, log it and show an alert to the user
-  catch(error) {
-    console.error(error);
-    alert("Failed to generate quiz: " + error.message);
-  }
+    // If an error occurs during the request, log it and show an alert to the user
+    catch(error) {
+        console.error(error);
+        alert("Failed to generate quiz: " + error.message);
+    }
 
-  // Always re-enable the button, whether the request succeeded,
-  // failed, or we're about to navigate away.
-  finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = originalBtnText;
-  }
+    // Always re-enable the button, whether the request succeeded,
+    // failed, or we're about to navigate away.
+    finally 
+    {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+    }
     }
 );
 </script>
