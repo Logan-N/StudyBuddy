@@ -1,6 +1,9 @@
 const { app } = require("@azure/functions");
 const jwt = require("jsonwebtoken");
-const officeParser = require("officeparser");
+//for extracting text from docx
+const mammoth = require("mammoth");
+//for extracting text from pdf
+const pdfParse = require("pdf-parse");
 const { getConnection, sql } = require("../../database");
 
 // only these file types are allowed for notes uploads
@@ -12,17 +15,26 @@ function getExtension(filename) {
     return dotIndex === -1 ? "" : filename.slice(dotIndex).toLowerCase();
 }
 
-// pulls the plain text out of whatever file got uploaded
+//extract text using library based on file extension. Support txt pdf and docx.
 async function extractText(file, extension) {
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // if it's a .txt file, just return the text directly
+    //If text string uses the buffer to convert to string
     if (extension === ".txt") {
         return buffer.toString("utf-8");
     }
+    //if docx, use mammoth to extract the text
+    if (extension === ".docx") {
+        const result = await mammoth.extractRawText({ buffer });
+        return result.value;
+    }
+    //if pdf, use pdf-parse to extract the text
+    if (extension === ".pdf") {
+        const result = await pdfParse(buffer);
+        return result.text;
+    }
 
-    //use officeparser for .docx and .pdf files
-    return await officeParser.parseOfficeAsync(buffer);
+    throw new Error("Unsupported file type.");
 }
 
 // generates a quiz based on the user's uploaded notes
@@ -142,8 +154,8 @@ Notes:
 ${trimmedNotes}
 
 First, check whether this text looks like it was copied directly from a
-copyrighted source, look for copyright logos or if it was copied from a textbook or 
-other published material rather than being the student's own notes or summary.
+copyrighted source, such as a textbook or other published material,
+rather than being the student's own notes or summary.
 If it looks like a large verbatim copyrighted excerpt, do not generate a quiz. Instead
 respond with ONLY this JSON:
 
