@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+  <title>Study Buddy - Take Quiz</title>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>Study Buddy</h1>
+        <nav>
+            <a href="home.html">Home</a>
+            <a class="active" href="quiz.html">Quiz</a>
+            <a href="planner.html">Planner</a>
+            <a href="account.html">Account</a>
+        </nav>
+    </header>
+
+    <h2 class="page-title" id="quizTitle">Loading quiz...</h2>
+
+    <div class="layout">
+
+        <section class="card">
+
+            <div id="quizArea">
+                Loading question...
+            </div>
+
+        </section>
+
+        <aside class="card">
+
+            <h3>Progress</h3>
+            <p id="progressText">Question - of -</p>
+
+            <div style="margin-top:12px; display:grid; gap:8px;">
+                <button id="prevBtn" class="secondary">Previous</button>
+                <button id="nextBtn" class="secondary">Next</button>
+                <button id="submitBtn" class="secondary">Submit Quiz</button>
+            </div>
+
+            <p style="margin-top:16px;">
+                Progress saves automatically, so you can close this
+                and come back later to finish.
+            </p>
+
+        </aside>
+
+    </div>
+
+</div>
+
+<script>
+    //Transfer someone to index.html if they are not logged in
+    const token = localStorage.getItem("jwt");
+    // If there is no token, redirect to index.html
+    if (!token) 
+    {
+    window.location.href = "index.html";
+    }
+    // If there is a token, check if it is expired
+    try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        // If the token is expired, remove it from localStorage and redirect to index.html
+        if (payload.exp * 1000 < Date.now()) 
+        {
+          localStorage.removeItem("jwt");
+          window.location.href = "index.html";
+        }
+
+      }
+      // If there is a token error, remove it from localStorage and redirect to index.html
+      catch 
+      {
+        localStorage.removeItem("jwt");
+        window.location.href = "index.html";
+      }
+
+    // get the quiz id from the url
+    const params = new URLSearchParams(window.location.search);
+    const quizID = params.get("id");
+    // if there is no quiz id, redirect to the quiz list page
+    if (!quizID) 
+    {
+        alert("No quiz selected.");
+        window.location.href = "quiz.html";
+    }
+
+    // Localstorage key to save progress for the quiz
+    const progressKey = `quiz-progress-${quizID}`;
+
+    // grab the elements for the page
+    const quizTitle = document.getElementById("quizTitle");
+    const quizArea = document.getElementById("quizArea");
+    const progressText = document.getElementById("progressText");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const submitBtn = document.getElementById("submitBtn");
+
+    // quiz state variables
+    let quiz = null;
+    let questions = [];
+    let currentIndex = 0;
+
+    // object to hold the user's answers
+    let answers = {};
+
+    // load saved progress from localStorage if it exists
+    function loadSavedProgress() {
+        const saved = localStorage.getItem(progressKey);
+
+        // if there is no saved progress, just return
+        if (!saved) 
+        {
+            return;
+        }
+
+        // if there is saved progress, parse it and load it into the state variables
+        try {
+            const parsed = JSON.parse(saved);
+            answers = parsed.answers || {};
+            currentIndex = parsed.currentIndex || 0;
+        // Resets the cache if an error occurs
+        } catch {
+
+            localStorage.removeItem(progressKey);
+        }
+  }
+
+    // save the current progress to localStorage
+    function saveProgress() 
+    {
+        localStorage.setItem(progressKey, JSON.stringify({ answers, currentIndex }));
+    }
+
+    // load the quiz from the API
+    async function loadQuiz() 
+    {
+        try {
+            const response = await fetch(`/api/GetQuiz?id=${quizID}`, {
+            method: "GET",
+            headers: { "X-Auth-Token": token }
+        });
+
+        // parse the response as text first, then try to parse it as JSON
+        const rawText = await response.text();
+        const result = rawText ? JSON.parse(rawText) : {};
+
+        // if the response is not ok, throw an error with the message from the response
+        if (!response.ok) 
+        {
+        throw new Error(result.error || "Failed to load quiz.");
+        }
+
+        // if the response is ok, load the quiz and questions into the state variables
+        quiz = result.quiz;
+        questions = result.questions;
+        
+        // set the quiz title on the page
+        quizTitle.textContent = quiz.title;
+
+        // load any saved progress from localStorage
+        loadSavedProgress();
+
+        // Set index to 0 if the quiz has updated
+        if (currentIndex >= questions.length) 
+        {
+        currentIndex = 0;
+        }
+
+        // render the Question
+        renderQuestion();
+
+        //if an error occurs, alert user.
+        } catch (error) 
+        {
+            console.error(error);
+            quizArea.innerHTML = "Failed to load quiz.";
+            alert(error.message);
+        }
+  }
+    // render the current question based on the quiz type
+    function renderQuestion() {
+
+        // load the current question and any saved answer for it
+        const question = questions[currentIndex];
+        const saved = answers[question.questionID];
+
+        // update the progress text and button states
+        progressText.textContent = `Question ${currentIndex + 1} of ${questions.length}`;
+        prevBtn.disabled = currentIndex === 0;
+        nextBtn.style.display = currentIndex === questions.length - 1 ? "none" : "inline-block";
+        submitBtn.style.display = currentIndex === questions.length - 1 ? "inline-block" : "none";
+
+        // Render the question based on the quiz type
+        if (quiz.quizTypeID === "MCQ") 
+        {
+            renderMultipleChoice(question, saved);
+        } 
+        else if (quiz.quizTypeID === "TFS") 
+        {
+            renderTrueFalse(question, saved);
+        } 
+        else if (quiz.quizTypeID === "FIB" || quiz.quizTypeID === "SHR") 
+        {
+        renderTextAnswer(question, saved);
+        } 
+        else if (quiz.quizTypeID === "FLC") 
+        {
+            renderFlashcard(question, saved);
+        } 
+        else 
+        {
+            quizArea.innerHTML = "Unsupported quiz type.";
+        }
+  }
+    // Function for rendering multiple choice questions
+    function renderMultipleChoice(question, saved) 
+    {
+        const letters = ["A", "B", "C", "D"];
+
+        // Render the question and options as radio buttons
+        quizArea.innerHTML = `
+        <h3>${question.questionText}</h3>
+        <div style="display:grid; gap:8px; margin-top:12px;">
+        ${question.options.map((optionText, i) => `
+            <label style="display:flex; gap:8px; align-items:center;">
+                <input
+                type="radio"
+                name="answer"
+                value="${letters[i]}"
+                ${saved === letters[i] ? "checked" : ""}
+                >
+                ${letters[i]}. ${optionText}
+          </label>
+        `).join("")}
+      </div>
+    `;
+
+    // Add event listeners to the radio buttons to save the selected answer
+    quizArea.querySelectorAll("input[name='answer']").forEach((input) => 
+    {
+        input.addEventListener("change", () => 
+        {
+            answers[question.questionID] = input.value;
+            saveProgress();
+        });
+    });
+  }
+
+  // Render a True/False question
+  function renderTrueFalse(question, saved) 
+  {
+    quizArea.innerHTML = `
+    <h3>${question.questionText}</h3>
+      <div style="display:grid; gap:8px; margin-top:12px;">
+            <label style="display:flex; gap:8px; align-items:center;">
+                <input type="radio" name="answer" value="true" ${saved === "true" ? "checked" : ""}>
+                True
+            </label>
+            <label style="display:flex; gap:8px; align-items:center;">
+                <input type="radio" name="answer" value="false" ${saved === "false" ? "checked" : ""}>
+                False
+            </label>
+      </div>
+    `;
+
+    // Add event listeners to the radio buttons to save the progress
+    quizArea.querySelectorAll("input[name='answer']").forEach((input) => {
+        input.addEventListener("change", () => 
+        {
+            answers[question.questionID] = input.value;
+            saveProgress();
+        });
+    });
+  }
+
+  // Function toRender a text answer question
+  function renderTextAnswer(question, saved) 
+  {
+    quizArea.innerHTML = `
+        <h3>${question.questionText}</h3>
+        <input
+            type="text"
+            id="textAnswer"
+            placeholder="Type your answer..."
+            value="${saved ? saved.replace(/"/g, "&quot;") : ""}"
+            style="margin-top:12px; width:100%;"
+        >
+    `;
+
+    document.getElementById("textAnswer").addEventListener("input", (event) => 
+    {
+      answers[question.questionID] = event.target.value;
+      saveProgress();
+    });
+  }
+
+  // Function to Render a flashcard question
+  function renderFlashcard(question, saved) 
+  {
+    const state = saved || { revealed: false, selfGraded: undefined };
+
+    quizArea.innerHTML = `
+        <h3>${question.questionText}</h3>
+
+        ${!state.revealed ? `
+            <button id="revealBtn" class="secondary" style="margin-top:12px;">
+            Show Answer
+            </button>
+        ` : `
+        <p style="margin-top:12px;"><strong>Answer:</strong> ${question.correctAnswer}</p>
+        <div style="display:grid; gap:8px; margin-top:12px;">
+            <button id="gotItRight" class="secondary">I got it right</button>
+            <button id="gotItWrong" class="secondary">I got it wrong</button>
+        </div>
+        <p style="margin-top:8px;">
+            ${state.selfGraded === true ? "Marked: correct" : ""}
+            ${state.selfGraded === false ? "Marked: incorrect" : ""}
+        </p>
+      `}
+    `;
+
+    // Buttons for the flashcard Questions to reveal answer and self-grade
+    const revealBtn = document.getElementById("revealBtn");
+    if (revealBtn) 
+    {
+        revealBtn.addEventListener("click", () => {
+        answers[question.questionID] = { revealed: true, selfGraded: undefined };
+        saveProgress();
+        renderQuestion();
+      });
+    }
+
+    // Buttons for the flashcard Questions to self-grade if they got it right
+    const gotItRight = document.getElementById("gotItRight");
+    if (gotItRight) 
+    {
+        gotItRight.addEventListener("click", () => 
+        {
+        answers[question.questionID] = { revealed: true, selfGraded: true };
+        saveProgress();
+        renderQuestion();
+        });
+    }
+
+    // Buttons for the flashcard Questions to self-grade if they got it wrong
+    const gotItWrong = document.getElementById("gotItWrong");
+    if (gotItWrong) 
+    {
+        gotItWrong.addEventListener("click", () => 
+        {
+        answers[question.questionID] = { revealed: true, selfGraded: false };
+        saveProgress();
+        renderQuestion();
+      });
+    }
+  }
+  // Add event listeners to go to the previous question
+  prevBtn.addEventListener("click", () => 
+  {
+    if (currentIndex > 0) 
+    {
+      currentIndex--;
+      saveProgress();
+      renderQuestion();
+    }
+  });
+
+  // Add event listeners to go to the next question
+  nextBtn.addEventListener("click", () => 
+  {
+    if (currentIndex < questions.length - 1) 
+    {
+      currentIndex++;
+      saveProgress();
+      renderQuestion();
+    }
+  });
+
+  // Add event listener to submit the quiz
+  submitBtn.addEventListener("click", async () => 
+  {
+    // put together the answers in whatever shape SubmitQuiz expects
+    const payload = {
+        quizID: Number(quizID),
+        answers: questions.map((q) => 
+        {
+            const saved = answers[q.questionID];
+
+            if (quiz.quizTypeID === "FLC") 
+            {
+            return {
+                questionID: q.questionID,
+                selfGraded: saved ? !!saved.selfGraded : false
+            };
+        }
+
+        return {
+          questionID: q.questionID,
+          userAnswer: saved || ""
+        };
+      })
+    };
+    // disable the submit button and show a loading state after the user clicks it to prevent multiple submissions
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Grading...";
+
+    // send the answers to the API to grade the quiz
+    try {
+      const response = await fetch("/api/SubmitQuiz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Auth-Token": token
+        },
+        body: JSON.stringify(payload)
+      });
+
+      // parse the response as text first, then try to parse it as JSON
+      const rawText = await response.text();
+      const result = rawText ? JSON.parse(rawText) : {};
+
+      // if the response is not ok, throw an error with the message from the response
+      if (!response.ok) 
+      {
+        throw new Error(result.error || "Failed to grade quiz.");
+      }
+
+      // Remove quiz from LocalStorage after submission
+      localStorage.removeItem(progressKey);
+
+      // show the results to the user
+      showResults(result);
+
+    // if an error occurs, alert user and re-enable the submit button
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit quiz: " + error.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Quiz";
+    }
+  });
+
+  // Function to show the results of the quiz after submission
+  function showResults(result) {
+    progressText.textContent = "Quiz complete!";
+
+    // Hide the navigation buttons after submission
+    prevBtn.style.display = "none";
+    nextBtn.style.display = "none";
+    submitBtn.style.display = "none";
+    
+    // Display the results in the quiz area
+    quizArea.innerHTML = `
+      <h3>You scored ${result.score}%</h3>
+      <p>${result.correctAnswers} out of ${result.totalQuestions} correct</p>
+
+      <div style="margin-top:16px; display:grid; gap:12px;">
+        ${result.breakdown.map((item) => `
+          <div style="padding:10px; border:1px solid; border-color:${item.isCorrect ? "green" : "red"};">
+            <strong>${item.questionText}</strong>
+            <br>Your answer: ${item.userAnswer}
+            <br>Correct answer: ${item.correctAnswer}
+            <br><em>${item.isCorrect ? "Correct" : "Incorrect"}</em>
+          </div>
+        `).join("")}
+      </div>
+
+      <a class="button-link" href="quiz.html" style="margin-top:16px; display:inline-block;">
+        Back to My Quizzes
+      </a>
+    `;
+  }
+
+  // Load the quiz when the page loads
+  loadQuiz();
+</script>
+
+</body>
+</html>
