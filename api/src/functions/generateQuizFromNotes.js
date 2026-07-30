@@ -1,7 +1,5 @@
 const { app } = require("@azure/functions");
 const jwt = require("jsonwebtoken");
-//for extracting text from docx
-const mammoth = require("mammoth");
 const { getConnection, sql } = require("../../database");
 
 // only these file types are allowed for notes uploads
@@ -21,14 +19,6 @@ async function extractText(file, extension) {
     if (extension === ".txt") {
         return buffer.toString("utf-8");
     }
-    //if docx, use mammoth to extract the text
-    if (extension === ".docx") {
-        const result = await mammoth.extractRawText({ buffer });
-        return result.value;
-    }
-    //if pdf, use pdf-parse to extract the text
-    if (extension === ".pdf") {
-    return text;
 }
 
     throw new Error("Unsupported file type.");
