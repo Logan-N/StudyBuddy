@@ -20,6 +20,5 @@
   },
   "allowScripts": {
     "bcrypt@6.0.0": true,
-    "tesseract.js@7.0.0": true
   }
 }
