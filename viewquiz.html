@@ -230,14 +230,14 @@
         <h3>${question.questionText}</h3>
         <div style="display:grid; gap:8px; margin-top:12px;">
         ${question.options.map((optionText, i) => `
-            <label style="display:flex; gap:8px; align-items:center;">
-                <input
-                type="radio"
-                name="answer"
-                value="${letters[i]}"
-                ${saved === letters[i] ? "checked" : ""}
-                >
-                ${letters[i]}. ${optionText}
+          <label class="choice-label">
+            <input
+            type="radio"
+            name="answer"
+            value="${letters[i]}"
+            ${saved === letters[i] ? "checked" : ""}
+            >
+            <span>${letters[i]}. ${stripLeadingLetter(optionText)}</span>
           </label>
         `).join("")}
       </div>
@@ -260,14 +260,14 @@
     quizArea.innerHTML = `
     <h3>${question.questionText}</h3>
       <div style="display:grid; gap:8px; margin-top:12px;">
-            <label style="display:flex; gap:8px; align-items:center;">
-                <input type="radio" name="answer" value="true" ${saved === "true" ? "checked" : ""}>
-                True
-            </label>
-            <label style="display:flex; gap:8px; align-items:center;">
-                <input type="radio" name="answer" value="false" ${saved === "false" ? "checked" : ""}>
-                False
-            </label>
+        <label class="choice-label">
+          <input type="radio" name="answer" value="true" ${saved === "true" ? "checked" : ""}>
+          <span>True</span>
+        </label>
+        <label class="choice-label">
+          <input type="radio" name="answer" value="false" ${saved === "false" ? "checked" : ""}>
+          <span>False</span>
+        </label>
       </div>
     `;
 

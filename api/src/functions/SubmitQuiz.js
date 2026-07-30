@@ -53,9 +53,18 @@ function allowedLeeway(correctAnswer)
     // normalize both the correct answer and the user's answer
     const correct = normalize(correctAnswer);
     const given = normalize(userAnswer);
+
     // for short answer questions, we allow for some typos using the edit distance function and the allowedLeeway function to determine how many typos are acceptable
     if (quizTypeID === "SHR") 
     {
+        // IsNumeric checks if correct answer is a number
+        const isNumeric = /^-?\d+(\.\d+)?$/.test(correct);
+
+        // If the correct answer is numeric, we require an exact match
+        if (isNumeric) {
+            return correct === given;
+        }
+        //If not a number, we allow for those typos
         const distance = editDistance(correct, given);
         return distance <= allowedLeeway(correct);
     }
