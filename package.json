@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "Study Buddy Project for KPU\r Create quizzes, review topics, and keep track of study plans in one simple place.",
   "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Logan-N/StudyBuddy.git"
