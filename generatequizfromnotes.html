@@ -172,23 +172,24 @@
 }
 
     // if the file is a pdf, extracts the text out of a pdf file using pdf.js
-    async function extractPdfText(file) {
-        // Load pdf.js from a CDN if it's not already loaded
-        if (!window.pdfjsLib) 
-        {
-            await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js");
-            pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js";
-        }
+    async function extractPdfText(file) 
+    {
+        // Dynamically import pdf.js from a CDN
+        const pdfjsLib = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@5.6.205/build/pdf.mjs");
+
+        // Set the workerSrc property to the URL of the pdf.worker.js file
+        pdfjsLib.GlobalWorkerOptions.workerSrc ="https://cdn.jsdelivr.net/npm/pdfjs-dist@5.6.205/build/pdf.worker.min.mjs";
 
         // Read the file as an ArrayBuffer and load it into pdf.js
         const buffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
-        // Extract text from each page of the PDF
+        // Initialize an empty string to hold the extracted text
         let fullText = "";
 
         // Loop through each page of the PDF and extract the text
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) 
+        {
             const page = await pdf.getPage(pageNum);
             const textContent = await page.getTextContent();
             const pageText = textContent.items.map((item) => item.str).join(" ");
@@ -199,11 +200,12 @@
     }
 
     // extracts the text out of a docx file using mammoth
-    async function extractDocxText(file) {
+    async function extractDocxText(file) 
+    {
         // Load mammoth.js from a CDN if it's not already loaded
         if (!window.mammoth) 
         {
-        await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js");
+        await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1.11.0/mammoth.browser.min.js");
         }
 
         // Read the file as an ArrayBuffer and load it into mammoth
