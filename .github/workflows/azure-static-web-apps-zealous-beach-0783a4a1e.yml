@@ -19,10 +19,6 @@ jobs:
         with:
           submodules: true
           lfs: false
-      - name: Clean Azure build artifacts
-        run: |
-          rm -rf api/node_modules
-          rm -rf api/.oryx
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
