@@ -1,142 +1,133 @@
-//Connect to Azure Functions
 const { app } = require("@azure/functions");
-//Connect to Anthropic to generate the quiz with Claude
-const Anthropic = require("@anthropic-ai/sdk");
-//Connect to Database and SQL Server
-const { getConnection, sql } = require("../../database");
-//Connect to jsonwebtoken for verifying tokens
 const jwt = require("jsonwebtoken");
-
-//Pulls the JSON quiz object out of Claude's reply, even if it is wrapped in a code fence
-function extractJson(text) {
-    if (!text) {
-        throw new Error("Claude returned an empty response.");
-    }
-
-    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    const candidate = fenced ? fenced[1] : text;
-
-    const start = candidate.indexOf("{");
-    const end = candidate.lastIndexOf("}");
-
-    if (start === -1 || end === -1 || end < start) {
-        throw new Error("Claude did not return valid JSON.");
-    }
-
-    return JSON.parse(candidate.slice(start, end + 1));
-}
+const { getConnection, sql } = require("../../database");
 
 app.http("generateQuizFromNotes", {
-    //Uses POST request to send data to the database
     methods: ["POST"],
-    //Doesn't require Azure Authentication
     authLevel: "anonymous",
-    //Function that will generate a quiz from a user's notes and save it to the database
-    handler: async (request) => {
+
+    handler: async (request, context) => {
+
         try {
-            //Get the JWT token from the request header
+            // grab the token from the header so we know who's making the quiz
             const token = request.headers.get("x-auth-token");
 
-            //If no token is provided, return a 401 status code and an error message
-            if (!token) {
+            if (!token) 
+            {
                 return {
                     status: 401,
-                    jsonBody: {
-                        message: "Authentication token missing."
-                    }
+                    jsonBody: { error: "No authentication token provided." }
                 };
-            };
+            }
 
-            //Verify the token and decode it to get the user ID
-            let decoded;
-
+            // make sure the token is actually valid before doing anything else
+            let user;
             try {
-                decoded = jwt.verify(token, process.env.JWT_SECRET);
-            }
-
-            //If the token is invalid, return a 401 status code and an error message
-            catch (error) {
+                user = jwt.verify(token, process.env.JWT_SECRET);
+            } catch (error) {
                 return {
                     status: 401,
-                    jsonBody: {
-                        message: error.message
-                    }
+                    jsonBody: { error: "Invalid or expired token." }
                 };
             }
 
-            //Get the logged in user's ID from the token instead of the frontend
-            const userID = decoded.userID;
+            // extract the userID from the token so we can associate the quiz with the user
+            const userID = user.userID;
 
-            //Get the quiz settings from the request body and store them in variables
-            const { count, type, difficulty } = await request.json();
+            // the notes text gets extracted in the browser before this ever
+            // gets sent, so this is just plain json like generateQuiz
+            const body = await request.json();
+            const { notesText, count, type, difficulty } = body;
 
-            //Connect to the database and store the connection in a variable
-            const connection = await getConnection();
-
-            //Load the user's saved notes
-            const noteQuery = await connection.request()
-                .input("userID", sql.Int, userID)
-                .query("SELECT * FROM Notes WHERE userID = @userID");
-
-            //If the user has no notes, return a 404 status code and an error message
-            if (noteQuery.recordset.length === 0) {
+            if (!notesText || notesText.trim().length === 0) 
+            {
                 return {
-                    status: 404,
-                    jsonBody: {
-                        message: "No notes found for the user."
-                    }
+                    status: 400,
+                    jsonBody: { error: "No notes text was provided." }
                 };
+            }
+
+            // maps the quiz types to the 3 letter codes used in the database
+            const quizTypeMap = 
+            {
+                multiple: "MCQ",
+                truefalse: "TFS",
+                fill: "FIB",
+                flashcard: "FLC",
+                short: "SHR"
             };
+            
+            // get the quizTypeID from the map based on the type provided in the request
+            const quizTypeID = quizTypeMap[type];
 
-            //Combine all of the user's notes into a single block of text
-            const combinedNotes = noteQuery.recordset
-                .map((note) => note.noteText || note.NoteText || JSON.stringify(note))
-                .join("\n\n");
+            if (!quizTypeID) 
+            {
+                return {
+                    status: 400,
+                    jsonBody: { error: "Invalid quiz type." }
+                };
+            }
 
-            //Connect to Claude
-            const client = new Anthropic({
-                apiKey: process.env.ANTHROPIC_API_KEY,
-            });
+            //Cap the Notes to 15k characters to reduce the token costs as we are a student project. Live website would likely have a higher limit for paid users, or for watching ads.
+            const trimmedNotes = notesText.slice(0, 15000);
 
-            //Build the prompt that tells Claude what kind of quiz to generate from the notes
-            const prompt = `You are an AI that generates quizzes based on user notes.
+            // building the prompt to send to Claude
+            // Also checks for copyrighted material and returns an error if detected
+            const prompt = `
+Generate a quiz based on the following notes.
 
-Here are the user's notes:
-${combinedNotes}
+Notes:
+${trimmedNotes}
 
-Create a quiz based ONLY on the content above.
+First, check whether this text looks like it was copied directly from a
+copyrighted source, such as a textbook or other published material,
+rather than being the student's own notes or summary.
+If it looks like a large verbatim copyrighted excerpt, do not generate a quiz. Instead
+respond with ONLY this JSON:
 
-Number of questions: ${count}
-Difficulty: ${difficulty}
-Quiz Type: ${type}
+{ "error": "This looks like copyrighted material rather than personal notes." }
 
-Follow these rules depending on the quiz type:
+Otherwise, come up with a short, descriptive title and topic based on
+what these notes are actually about.
 
-1. multiple
-   - Provide 4 options: A, B, C, D
-   - Correct answer must be one of those letters
+Number of questions:
+${count}
 
-2. truefalse
-   - Provide a statement
-   - Answer must be true or false
+Difficulty:
+${difficulty}
 
-3. fill
-   - Provide a sentence with a blank (___)
-   - Answer should be the missing word or phrase
+Quiz Type:
+${type}
 
-4. flashcard
-   - Provide a prompt
-   - Answer should be the "back of the flashcard"
 
-5. short
-   - Provide an open-ended question
-   - Answer can be a short explanation
+Rules:
 
-Return JSON ONLY, with no extra text and no markdown formatting, in this exact format:
+Multiple Choice:
+- Provide 4 options: A, B, C, D
+- Correct answer must be one of those letters
+
+True/False:
+- Provide a statement
+- Answer must be true or false
+
+Fill in the Blank:
+- Provide a sentence with a blank (___)
+- Answer should be the missing word or phrase
+
+Flashcard:
+- Provide a prompt
+- Answer should be the back of the flashcard
+
+Short Answer:
+- Provide an open-ended question
+- Answer should be a short explanation
+
+
+Return JSON ONLY, no markdown code fences:
 
 {
-  "title": "Quiz Based on Notes",
-  "topic": "User Notes",
+  "title": "...",
+  "topic": "...",
   "difficulty": "...",
   "type": "...",
   "questions": [
@@ -147,61 +138,108 @@ Return JSON ONLY, with no extra text and no markdown formatting, in this exact f
       "answer": "..."
     }
   ]
-}`;
+}
+`;
 
-            //Ask Claude to generate the quiz
-            const response = await client.messages.create({
-                model: "claude-3-5-sonnet-20241022",
-                max_tokens: 2000,
-                messages: [{ role: "user", content: prompt }],
+            // send the prompt off to Anthropic and wait for the quiz
+            const response = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "x-api-key": process.env.ANTHROPIC_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "claude-sonnet-4-5",
+                    max_tokens: 1500,
+                    messages: [{ role: "user", content: prompt }]
+                })
             });
-
-            //Pull the JSON quiz object out of Claude's reply
-            const quiz = extractJson(response?.content?.[0]?.text);
-
-            //Insert the new quiz into the database and get its quizID back
-            const quizInsert = await connection.request()
-                .input("userID", sql.Int, userID)
-                .input("title", sql.NVarChar, quiz.title)
-                .input("topic", sql.NVarChar, quiz.topic)
-                .input("difficulty", sql.NVarChar, quiz.difficulty)
-                .input("type", sql.NVarChar, quiz.type)
-                .query(
-                    "INSERT INTO Quizzes (userID, title, topic, difficulty, type) OUTPUT INSERTED.quizID VALUES (@userID, @title, @topic, @difficulty, @type)"
-                );
-
-            const quizID = quizInsert.recordset[0].quizID;
-
-            //Insert each generated question into the database
-            for (const question of quiz.questions || []) {
-                await connection.request()
-                    .input("quizID", sql.Int, quizID)
-                    .input("questionText", sql.NVarChar, question.question)
-                    .input("options", sql.NVarChar, JSON.stringify(question.options || []))
-                    .input("correctAnswer", sql.NVarChar, String(question.answer))
-                    .query(
-                        "INSERT INTO Questions (QuizID, QuestionText, Options, CorrectAnswer) VALUES (@quizID, @questionText, @options, @correctAnswer)"
-                    );
+            
+            // check if the response from Anthropic is ok, if not throw an error
+            if (!response.ok) 
+            {
+                const errorText = await response.text();
+                context.log("Anthropic API error:", errorText);
+                throw new Error("Quiz generation service failed.");
             }
 
-            //Return a 200 status code, the new quiz ID, the generated quiz, and a success message
+            // parse the response from Anthropic and extract the generated quiz
+            const data = await response.json();
+            const generatedText = data.content[0].text;
+
+            // clean up the response to make sure it's valid JSON
+            const cleanJSON = generatedText
+                .replace(/```json/g, "")
+                .replace(/```/g, "")
+                .trim();
+
+            // parse the JSON to make sure it's valid
+            const quiz = JSON.parse(cleanJSON);
+
+            //if the quiz returns an error, return it to the user. Such as if it was detected as copyrighted material
+            if (quiz.error) 
+            {
+                return {
+                    status: 400,
+                    jsonBody: { error: quiz.error }
+                };
+            }
+
+            // connect to the DB and save everything
+            const pool = await getConnection();
+
+            // insert the quiz into the database and get the new quizID
+            const quizInsert = await pool.request()
+                .input("userID", sql.Int, userID)
+                .input("title", sql.VarChar(100), quiz.title)
+                .input("topic", sql.VarChar(255), quiz.topic)
+                .input("difficulty", sql.VarChar(20), quiz.difficulty)
+                .input("quizTypeID", sql.Char(3), quizTypeID)
+                .query(`
+                    INSERT INTO Quiz (UserID, Title, Topic, Difficulty, QuizTypeID, CreatedDate)
+                    OUTPUT INSERTED.QuizID
+                    VALUES (@userID, @title, @topic, @difficulty, @quizTypeID, GETDATE())
+                `);
+
+            // get the quizID of the newly created quiz
+            const quizID = quizInsert.recordset[0].QuizID;
+
+            //Variable for questions and sets the order of the questions in the quiz
+            const questions = quiz.questions || [];
+
+            // loop through and insert each question one at a time
+            for (let i = 0; i < questions.length; i++) 
+            {
+                const question = questions[i];
+                await pool.request()
+                .input("quizID", sql.Int, quizID)
+                .input("questionNumber", sql.Int, i + 1)
+                .input("questionText", sql.VarChar(sql.MAX), question.question)
+                .input("options", sql.VarChar(sql.MAX), JSON.stringify(question.options || []))
+                .input("correctAnswer", sql.VarChar(sql.MAX), question.answer)
+                .query(`
+                    INSERT INTO Questions (QuizID, QuestionNumber, QuestionText, Options, CorrectAnswer, CreatedDate)
+                    VALUES (@quizID, @questionNumber, @questionText, @options, @correctAnswer, GETDATE())
+                `);
+            }
+
             return {
                 status: 200,
                 jsonBody: {
-                    message: "Quiz generated from notes and saved successfully.",
-                    quizID: quizID,
-                    quiz: quiz
+                    message: "Quiz generated successfully.",
+                    quizID
                 }
             };
-        }
 
-        //If error occurs, return a 500 status code and the error message
-        catch (error) {
+        } catch (error) {
+            // log it so we can see what went wrong in the portal,
+            // context.log.error doesn't actually exist so don't use it lol
+            context.log("Quiz generation from notes failed:", error.message);
+
             return {
                 status: 500,
-                jsonBody: {
-                    message: "Quiz generation from notes failed: " + error.message
-                }
+                jsonBody: { error: error.message || "Quiz generation from notes failed." }
             };
         }
     }

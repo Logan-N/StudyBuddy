@@ -133,71 +133,153 @@
 
 
 <script>
-  //Transfer someone to index.html if they are not logged in
-  const token = localStorage.getItem("jwt");
+    //Transfer someone to index.html if they are not logged in
+    const token = localStorage.getItem("jwt");
 
-  // If there is no token, redirect to index.html
-  if (!token)
-  {
-    window.location.href = "index.html";
-  }
-
-  // If there is a token, check if it is expired
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-
-      // If the token is expired, remove it from localStorage and redirect to index.html
-      if (payload.exp * 1000 < Date.now())
-        {
-          localStorage.removeItem("jwt");
-          window.location.href = "index.html";
-        }
-      }
-
-      // If there is a token error, remove it from localStorage and redirect to index.html
-      catch
-      {
-        localStorage.removeItem("jwt");
+    // If there is no token, redirect to index.html
+    if (!token)
+    {
         window.location.href = "index.html";
-      }
+    }
 
-// Handle form submission
-const quizForm = document.getElementById("quizForm");
-
-// Add an event listener for the form submission
-quizForm.addEventListener(
-    "submit",
-    async (event) => {
-    event.preventDefault();
-
-    //Disable submit button when generating quiz to prevent multiple submissions
-    const submitBtn = quizForm.querySelector("button[type='submit']");
-    const originalBtnText = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Generating...";
-
-    const file = document.getElementById("notesFile").files[0];
-    const count = Number(document.getElementById("qcount").value);
-    const type = document.getElementById("type").value;
-    const difficulty = document.getElementById("difficulty").value;
-    // Create a FormData object to send the file and other data
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("count", count);
-    formData.append("type", type);
-    formData.append("difficulty", difficulty);
-
+    // If there is a token, check if it is expired
     try {
-        // Make a POST request to the server to generate the quiz
-        const response = await fetch("/api/generateQuizFromNotes",
+        const payload = JSON.parse(atob(token.split(".")[1]));
+
+        // If the token is expired, remove it from localStorage and redirect to index.html
+        if (payload.exp * 1000 < Date.now())
         {
-            method: "POST",
-            headers:
-        {
-            "X-Auth-Token": token
-        },
-            body: formData
+            localStorage.removeItem("jwt");
+            window.location.href = "index.html";
         }
+    }
+
+        // If there is a token error, remove it from localStorage and redirect to index.html
+        catch
+        {
+            localStorage.removeItem("jwt");
+            window.location.href = "index.html";
+        }
+    //Loads a script for Mammoth.js or PDF.js to extract the text from a docx or pdf file
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Failed to load ${src}`));
+            document.head.appendChild(script);
+        });
+}
+
+    // if the file is a pdf, extracts the text out of a pdf file using pdf.js
+    async function extractPdfText(file) {
+        // Load pdf.js from a CDN if it's not already loaded
+        if (!window.pdfjsLib) 
+        {
+            await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js");
+            pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js";
+        }
+
+        // Read the file as an ArrayBuffer and load it into pdf.js
+        const buffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+        // Extract text from each page of the PDF
+        let fullText = "";
+
+        // Loop through each page of the PDF and extract the text
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map((item) => item.str).join(" ");
+            fullText += pageText + "\n\n";
+        }
+        // Return the extracted text
+        return fullText;
+    }
+
+    // extracts the text out of a docx file using mammoth
+    async function extractDocxText(file) {
+        // Load mammoth.js from a CDN if it's not already loaded
+        if (!window.mammoth) 
+        {
+        await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js");
+        }
+
+        // Read the file as an ArrayBuffer and load it into mammoth
+        const buffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+
+        // Return the extracted text
+        return result.value;
+    }
+
+    // based on file extension, extracts the text out of a pdf, docx, or txt file
+    async function extractNotesText(file) {const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    
+    //uses file.text() to extract the text from a txt file
+    if (extension === ".txt") 
+    {
+        return await file.text();
+    }
+
+    //uses pdf.js to extract the text from a pdf file
+    if (extension === ".pdf") {
+        return await extractPdfText(file);
+    }
+
+    //uses mammoth.js to extract the text from a docx file
+    if (extension === ".docx") {
+        return await extractDocxText(file);
+    }
+
+    // If the file type is not supported, throw an error
+    throw new Error("Only PDF, DOCX, and TXT files are supported.");
+    }
+
+    // Handle form submission
+    const quizForm = document.getElementById("quizForm");
+
+    // Add an event listener for the form submission
+    quizForm.addEventListener(
+        "submit",
+        async (event) => {
+        event.preventDefault();
+
+        //Disable submit button when generating quiz to prevent multiple submissions
+        const submitBtn = quizForm.querySelector("button[type='submit']");
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Reading file...";
+
+        const file = document.getElementById("notesFile").files[0];
+        const count = Number(document.getElementById("qcount").value);
+        const type = document.getElementById("type").value;
+        const difficulty = document.getElementById("difficulty").value;
+
+        try {
+            // pull the plain text out of the file right here in the browser,
+            // so the backend never has to deal with pdf/docx parsing at all
+            const notesText = await extractNotesText(file);
+
+            if (!notesText || notesText.trim().length === 0) 
+            {
+                throw new Error("Couldn't find any readable text in that file.");
+            }
+
+            submitBtn.textContent = "Generating...";
+
+            // Make a POST request to the server to generate the quiz
+            const response = await fetch("/api/generateQuizFromNotes",
+            {
+                method: "POST",
+                headers:
+            {
+                "Content-Type": "application/json",
+                "X-Auth-Token": token
+            },
+                body: JSON.stringify({ notesText, count, type, difficulty })
+            }
     );
 
     // Read the response as text first incase it's not valid JSON (e.g., an error message)
@@ -206,9 +288,9 @@ quizForm.addEventListener(
     let result;
     try {
         result = rawText ? JSON.parse(rawText) : {};
-  } catch (parseError) {
-    throw new Error(`Server returned an unexpected response (status ${response.status}).`);
-  }
+    } catch (parseError) {
+        throw new Error(`Server returned an unexpected response (status ${response.status}).`);
+    }
 
     // If the response is not OK, throw an error with the message from the server
     if (!response.ok)
@@ -226,7 +308,7 @@ quizForm.addEventListener(
     catch(error) {
         console.error(error);
         alert("Failed to generate quiz: " + error.message);
-  }
+    }
 
     // Always re-enable the button, whether the request succeeded,
     // failed, or we're about to navigate away.
