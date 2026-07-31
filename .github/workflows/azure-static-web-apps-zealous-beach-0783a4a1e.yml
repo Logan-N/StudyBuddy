@@ -31,7 +31,7 @@ jobs:
           app_location: "."
           api_location: "api"
           output_location: ""
-          skip_app_build: false
+          skip_app_build: true
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
