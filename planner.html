@@ -30,6 +30,12 @@
         <form id="plannerForm">
           <label for="eventDate">Date</label>
           <input id="eventDate" type="date" required>
+
+          <label for="eventStartTime">Start Time (optional)</label>
+          <input id="eventStartTime" type="time">
+
+          <label for="eventEndTime">End Time (optional)</label>
+          <input id="eventEndTime" type="time">
 	
           <label for="eventTitle">Title</label>
           <input id="eventTitle" placeholder="e.g., Quiz: Biology Basics" required>
@@ -53,9 +59,7 @@
           <div class="small">No events yet.</div>
         </div>
         <div style="margin-top: 12px; display: grid; gap: 8px;">
-          <button id="exportPlanner" class="secondary">Export Events (JSON)</button>
-          <button id="sharePlanner" class="secondary">Create Planner Link</button>
-          <div id="plannerShare" class="share-link"></div>
+          <button id="exportPlanner" class="secondary">Export Events</button>
         </div>
       </section>
 
@@ -93,8 +97,6 @@
     const plannerForm = document.getElementById('plannerForm');
     const plannerList = document.getElementById('plannerList');
     const exportPlanner = document.getElementById('exportPlanner');
-    const sharePlanner = document.getElementById('sharePlanner');
-    const plannerShare = document.getElementById('plannerShare');
     const calendarGrid = document.getElementById('calendarGrid');
     let events = [];
 	// Load planner events from the database
@@ -107,7 +109,7 @@
        headers: {
        "x-auth-token": localStorage.getItem("jwt")
   }
-});
+  });
 
     const result = await response.json();
 
@@ -118,8 +120,10 @@
     events = result.map(event => ({
     date: event.ActivityDate.split("T")[0],
     title: event.ActivityTitle,
-    notes: event.Notes
-}));
+    notes: event.Notes,
+    startTime: event.StartTime,
+    endTime: event.EndTime
+  }));
 
     // Display the events and calendar
     renderEvents();
@@ -128,7 +132,7 @@
 	{
     console.error("Failed to load planner:", error);
   	}
-}
+  }
     // Add event listener for the planner form submission
     plannerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -137,6 +141,8 @@
 	    const activityType = document.getElementById('activityType').value;
       const title = document.getElementById('eventTitle').value;
       const notes = document.getElementById('eventNotes').value;
+      const startTime = document.getElementById('eventStartTime').value || null;
+      const endTime = document.getElementById('eventEndTime').value || null;
 
       try {
         const response = await fetch("/api/Planner", {
@@ -149,14 +155,16 @@
             date,
 			      activityType,
             title,
-            notes
+            notes,
+            startTime,
+            endTime
           })
         });
 
         const result = await response.json();
 
         if (response.ok) {
-          events.push({ id: Date.now(), date, activityType, title, notes });
+          events.push({ id: Date.now(), date, activityType, title, notes, startTime, endTime });
           renderEvents();
           plannerForm.reset();
         } else {
@@ -167,15 +175,35 @@
       }
     });
 
+    //Format the Time in event list based on if No time, Start time only, or Start and End tim
+    function formatTimeRange(startTime, endTime) {
+
+      //if no start time, display nothing.
+      if (!startTime) 
+      {
+        return '';
+      }
+
+      //if there is a start time but no end time, display only the start time.
+      if (endTime)
+      {
+        return `${startTime} - ${endTime}`;
+      } 
+
+      //if there is a start time and an end time, display both.
+      return startTime;
+    }
+
+    // Render the events in the planner list and the calendar
     function renderEvents() {
       plannerList.innerHTML = '';
-
+      
       if (events.length === 0) {
         plannerList.innerHTML = '<div class="small">No events yet.</div>';
         renderCalendar();
         return;
       }
-
+      
       events.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach((ev) => {
         const div = document.createElement('div');
         div.className = 'event-card';
@@ -183,7 +211,7 @@
           <div class="event-icon">📅</div>
           <div class="event-content">
             <h4>${escapeHtml(ev.title)}</h4>
-            <div class="event-date">${escapeHtml(formatDate(ev.date))}${ev.notes ? ' · ' + escapeHtml(ev.notes) : ''}</div>
+            <div class="event-date">${escapeHtml(formatDate(ev.date))}${ev.startTime ? ' · ' + escapeHtml(formatTimeRange(ev.startTime, ev.endTime)) : ''}${ev.notes ? ' · ' + escapeHtml(ev.notes) : ''}</div>
           </div>
         `;
         plannerList.appendChild(div);
@@ -192,8 +220,13 @@
       renderCalendar();
     }
 
-    function renderCalendar() {
-      if (!calendarGrid) return;
+    // Render the calendar grid with the current month and events
+    function renderCalendar() 
+    {
+      if (!calendarGrid) 
+      {
+        return;
+      }
 
       const today = new Date();
       const year = today.getFullYear();
@@ -204,46 +237,55 @@
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const calendarTitle = document.getElementById('calendarTitle');
       calendarGrid.innerHTML = '';
-// set the calendar title to show the current month + year
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                       'July', 'August', 'September', 'October', 'November', 'December'];
-  calendarTitle.textContent = `${monthNames[month]} ${year}`;
+      // set the calendar title to show the current month + year
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      calendarTitle.textContent = `${monthNames[month]} ${year}`;
 
-      dayNames.forEach((name) => {
+      dayNames.forEach((name) => 
+      {
         const label = document.createElement('div');
         label.className = 'calendar-label';
         label.textContent = name;
         calendarGrid.appendChild(label);
       });
 
-      for (let i = 0; i < startingDay; i++) {
-    const empty = document.createElement('div');
-    empty.className = 'calendar-day empty';
-    calendarGrid.appendChild(empty);
-  }
+      for (let i = 0; i < startingDay; i++) 
+      {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-day empty';
+        calendarGrid.appendChild(empty);
+      }
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const cell = document.createElement('div');
-    cell.className = 'calendar-day';
+      for (let day = 1; day <= daysInMonth; day++) 
+      {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day';
 
-    const dateValue = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const dayEvents = events.filter((ev) => ev.date === dateValue);
+        const dateValue = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayEvents = events.filter((ev) => ev.date === dateValue);
 
-    let eventHtml = '';
-    if (dayEvents.length > 0) {
-      eventHtml = `<div class="calendar-day-event">${escapeHtml(dayEvents[0].title)}</div>`;
-      if (dayEvents.length > 1) {
-        eventHtml += `<div class="calendar-multiple">+${dayEvents.length - 1} more</div>`;
+        let eventHtml = '';
+        if (dayEvents.length > 0) 
+        {
+          eventHtml = `<div class="calendar-day-event">${escapeHtml(dayEvents[0].title)}</div>`;
+          if (dayEvents.length > 1) 
+          {
+            eventHtml += `<div class="calendar-multiple">+${dayEvents.length - 1} more</div>`;
+          }
+        }
+
+        cell.innerHTML = `<div class="calendar-day-number">${day}</div>${eventHtml}`;
+        calendarGrid.appendChild(cell);
       }
     }
 
-    cell.innerHTML = `<div class="calendar-day-number">${day}</div>${eventHtml}`;
-    calendarGrid.appendChild(cell);
-  }
-    }
-
-    function formatDate(dateString) {
-      if (!dateString) return '';
+    // Format the date in a more readable format for display
+    function formatDate(dateString) 
+    {
+      if (!dateString)
+      { 
+        return '';
+      }
       const date = new Date(dateString + 'T00:00:00');
       return date.toLocaleDateString(undefined, {
         weekday: 'long',
@@ -253,25 +295,37 @@
       });
     }
 
+    //Exports the events in the planner to a text file.
     exportPlanner.addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(events, null, 2)], { type: 'application/json' });
+      const lines = events
+        .slice()
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((ev) => {
+          const timeText = ev.startTime
+            ? (ev.endTime ? `${ev.startTime} - ${ev.endTime}` : ev.startTime)
+            : '';
+          const parts = [formatDate(ev.date)];
+          if (timeText) parts.push(timeText);
+          parts.push(ev.title);
+          if (ev.notes && ev.notes !== 'none') parts.push(`(${ev.notes})`);
+          return parts.join(' | ');
+        });
+
+      const text = lines.length > 0
+        ? lines.join('\n')
+        : 'No events to export.';
+
+      const blob = new Blob([text], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'planner-events.json';
+      a.download = 'planner-events.txt';
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
     });
-
-    sharePlanner.addEventListener('click', () => {
-      const data = btoa(unescape(encodeURIComponent(JSON.stringify(events))));
-      const link = location.origin + location.pathname + '#planner=' + data;
-      plannerShare.style.display = 'block';
-      plannerShare.textContent = link;
-    });
-
+    
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, (c) => ({
         '&': '&amp;',
@@ -282,21 +336,10 @@
       }[c]));
     }
 
+    // Load events when the page is loaded
    window.addEventListener("load", async () => {
-
-  // Keep your shared planner feature if you still want it
-  const hash = location.hash.substring(1);
-
-  if (hash && hash.startsWith("planner=")) {
-    try {
-      events = JSON.parse(decodeURIComponent(escape(atob(hash.slice(8)))));
-    } catch (e) {
-      console.warn("Invalid shared planner data");
-    }
-  }
-
-  // Load events from SQL
-  await loadPlanner();
+      // Load events from SQL
+      await loadPlanner();
     });
   </script>
 </body>

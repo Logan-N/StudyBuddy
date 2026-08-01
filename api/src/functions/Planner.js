@@ -59,7 +59,9 @@ const userId = decoded.userID;
                     PA.ActivityDate,
                     PA.ActivityType,
                     PA.ActivityTitle,
-                    PA.Notes
+                    PA.Notes,
+                    PA.StartTime,
+                    PA.EndTime
                 FROM Planner P
                 JOIN PlannerActivity PA
                     ON P.PlannerID = PA.PlannerID
@@ -76,7 +78,11 @@ const userId = decoded.userID;
       const activityType=body.activityType;
       const activityDate = body.date;
       const activityTitle = body.title;
+      // if notes are not provided, set them to "none"
       const notes = body.notes || "none"; // just to show there aren't any default notes
+      // if start time or end time is not provided, set them to null
+      const startTime = body.startTime || null;
+      const endTime = body.endTime || null;
 // if user id activity date or activity title is missing you return 400 error (which is basically a bad input  or missing field)
       if (!userId || !activityDate || !activityTitle) {
         return {
@@ -118,20 +124,26 @@ const userId = decoded.userID;
         .input("activityDate", sql.Date, activityDate)
         .input("activityTitle", sql.VarChar(30), activityTitle)
         .input("notes", sql.VarChar(sql.MAX), notes)
+        .input("startTime", sql.VarChar(5), startTime)
+        .input("endTime", sql.VarChar(5), endTime)
         .query(`
           INSERT INTO PlannerActivity (
             PlannerID,
             ActivityType,
             ActivityDate,
             ActivityTitle,
-            Notes
+            Notes,
+            StartTime,
+            EndTime
           )
           VALUES (
             @plannerId,
             @activityType,
             @activityDate,
             @activityTitle,
-            @notes
+            @notes,
+            @startTime,
+            @endTime
           )
         `);
 
