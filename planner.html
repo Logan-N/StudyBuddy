@@ -38,11 +38,11 @@
           <input id="eventEndTime" type="time">
 	
           <label for="eventTitle">Title</label>
-          <input id="eventTitle" placeholder="e.g., Quiz: Biology Basics" required>
+          <input id="eventTitle" placeholder="Math Test" maxlength="30" required>
 		  <label for ="activityType"> Activity Type </label>
 		  <select id="activityType" required>
-			<option value="CLA">classes</option>
-    		<option value="DEA">deadlines</option>
+			<option value="CLA">Classes</option>
+    		<option value="DEA">Deadlines</option>
     		<option value="EXA">Exam</option>
 			<option value="STD">Study goals</option>
 		  </select>
@@ -99,6 +99,15 @@
     const exportPlanner = document.getElementById('exportPlanner');
     const calendarGrid = document.getElementById('calendarGrid');
     let events = [];
+
+    // maps the 3-letter DB codes to something readable for display
+    const activityTypeLabels = {
+      CLA: 'Class',
+      DEA: 'Deadline',
+      EXA: 'Exam',
+      STD: 'Study Goal'
+    };
+
 	// Load planner events from the database
 	async function loadPlanner() {
  	 try {
@@ -122,7 +131,8 @@
     title: event.ActivityTitle,
     notes: event.Notes,
     startTime: event.StartTime,
-    endTime: event.EndTime
+    endTime: event.EndTime,
+    activityType: event.ActivityType
   }));
 
     // Display the events and calendar
@@ -175,6 +185,15 @@
       }
     });
 
+    // converts the 24H Time into the AM PM for better reading
+    function formatTime(time) {
+      const [hourStr, minute] = time.split(':');
+      const hour = parseInt(hourStr, 10);
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+      return `${displayHour}:${minute} ${period}`;
+    }
+
     //Format the Time in event list based on if No time, Start time only, or Start and End tim
     function formatTimeRange(startTime, endTime) {
 
@@ -184,14 +203,14 @@
         return '';
       }
 
-      //if there is a start time but no end time, display only the start time.
+      //if there is a start time and an end time, display both.
       if (endTime)
       {
-        return `${startTime} - ${endTime}`;
+        return `${formatTime(startTime)} - ${formatTime(endTime)}`;
       } 
 
-      //if there is a start time and an end time, display both.
-      return startTime;
+      //if there is a start time but no end time, display only the start time.
+      return formatTime(startTime);
     }
 
     // Render the events in the planner list and the calendar
@@ -211,7 +230,7 @@
           <div class="event-icon">📅</div>
           <div class="event-content">
             <h4>${escapeHtml(ev.title)}</h4>
-            <div class="event-date">${escapeHtml(formatDate(ev.date))}${ev.startTime ? ' · ' + escapeHtml(formatTimeRange(ev.startTime, ev.endTime)) : ''}${ev.notes ? ' · ' + escapeHtml(ev.notes) : ''}</div>
+            <div class="event-date">${escapeHtml(formatDate(ev.date))}${ev.startTime ? ' · ' + escapeHtml(formatTimeRange(ev.startTime, ev.endTime)) : ''} · ${escapeHtml(activityTypeLabels[ev.activityType] || ev.activityType)}${ev.notes ? ' · ' + escapeHtml(ev.notes) : ''}</div>
           </div>
         `;
         plannerList.appendChild(div);
@@ -301,11 +320,10 @@
         .slice()
         .sort((a, b) => a.date.localeCompare(b.date))
         .map((ev) => {
-          const timeText = ev.startTime
-            ? (ev.endTime ? `${ev.startTime} - ${ev.endTime}` : ev.startTime)
-            : '';
+          const timeText = formatTimeRange(ev.startTime, ev.endTime);
           const parts = [formatDate(ev.date)];
           if (timeText) parts.push(timeText);
+          parts.push(activityTypeLabels[ev.activityType] || ev.activityType);
           parts.push(ev.title);
           if (ev.notes && ev.notes !== 'none') parts.push(`(${ev.notes})`);
           return parts.join(' | ');
