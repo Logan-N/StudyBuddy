@@ -38,7 +38,7 @@
           <input id="eventEndTime" type="time">
 	
           <label for="eventTitle">Title</label>
-          <input id="eventTitle" placeholder="Math Test" maxlength="30" required>
+          <input id="eventTitle" maxlength="30" required>
 		  <label for ="activityType"> Activity Type </label>
 		  <select id="activityType" required>
 			<option value="CLA">Classes</option>
@@ -100,7 +100,7 @@
     const calendarGrid = document.getElementById('calendarGrid');
     let events = [];
 
-    // maps the 3-letter DB codes to something readable for display
+  // maps the 3-letter DB codes to their full names for display in the Upcoming Events section
     const activityTypeLabels = {
       CLA: 'Class',
       DEA: 'Deadline',
@@ -186,7 +186,8 @@
     });
 
     // converts the 24H Time into the AM PM for better reading
-    function formatTime(time) {
+    function formatTime(time) 
+    {
       const [hourStr, minute] = time.split(':');
       const hour = parseInt(hourStr, 10);
       const period = hour >= 12 ? 'PM' : 'AM';
@@ -195,7 +196,8 @@
     }
 
     //Format the Time in event list based on if No time, Start time only, or Start and End tim
-    function formatTimeRange(startTime, endTime) {
+    function formatTimeRange(startTime, endTime) 
+    {
 
       //if no start time, display nothing.
       if (!startTime) 

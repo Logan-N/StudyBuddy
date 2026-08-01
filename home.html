@@ -72,6 +72,14 @@
         window.location.href = "index.html";
       }
 
+    // maps the 3-letter DB codes to their full names for display in the Upcoming Events section
+    const activityTypeLabels = {
+      CLA: 'Class',
+      DEA: 'Deadline',
+      EXA: 'Exam',
+      STD: 'Study Goal'
+    };
+
  	  // Load planner events from the database
 	  async function loadPlanner()
     {
@@ -98,7 +106,10 @@
     events = result.map(event => ({
     date: event.ActivityDate.split("T")[0],
     title: event.ActivityTitle,
-    notes: event.Notes
+    notes: event.Notes,
+    startTime: event.StartTime,
+    endTime: event.EndTime,
+    activityType: event.ActivityType
     }));
 
     // Display the events and calendar
@@ -136,13 +147,42 @@
       });
     }
 
+    // converts the 24H Time into the AM PM for better reading
+    function formatTime(time) 
+    {
+      const [hourStr, minute] = time.split(':');
+      const hour = parseInt(hourStr, 10);
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+      return `${displayHour}:${minute} ${period}`;
+    }
+
+    //Format the Time in event list based on if No time, Start time only, or Start and End time
+    function formatTimeRange(startTime, endTime) 
+    {
+
+      //if no start time, display nothing.
+      if (!startTime) 
+      {
+        return '';
+      }
+
+      //if there is a start time and an end time, display both.
+      if (endTime)
+      {
+        return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+      } 
+
+      //if there is a start time but no end time, display only the start time.
+      return formatTime(startTime);
+    }
+
       //Render the events in Upcoming Events section
       function renderEvents() {
         plannerList.innerHTML = '';
 
         if (events.length === 0) {
           plannerList.innerHTML = '<div class="small">No events yet.</div>';
-          renderCalendar();
           return;
         }
 
@@ -153,7 +193,7 @@
           <div class="event-icon">📅</div>
           <div class="event-content">
             <h4>${escapeHtml(ev.title)}</h4>
-            <div class="event-date">${escapeHtml(formatDate(ev.date))}${ev.notes ? ' · ' + escapeHtml(ev.notes) : ''}</div>
+            <div class="event-date">${escapeHtml(formatDate(ev.date))}${ev.startTime ? ' · ' + escapeHtml(formatTimeRange(ev.startTime, ev.endTime)) : ''} · ${escapeHtml(activityTypeLabels[ev.activityType] || ev.activityType)}${ev.notes ? ' · ' + escapeHtml(ev.notes) : ''}</div>
           </div>
         `;
         plannerList.appendChild(div);
