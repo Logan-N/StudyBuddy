@@ -179,7 +179,6 @@ app.http("Account", {
                         }
                     };
                 }
-            }
 
                 // if the body contains a new password, handle the password change
                 if (body.newPassword) {
@@ -262,15 +261,25 @@ app.http("Account", {
                     };
                 }
 
-                    // if the body does not contain a new email or new password, return a 400 error
-                    return {
-                        status: 405,
-                        jsonBody: {
-                            message: "Method not allowed."
-                        }
-                    };
-                
+                // if the body does not contain a new email or new password, return a 400 error
+                return {
+                    status: 400,
+                    jsonBody: {
+                        message: "Request must include either newEmail or newPassword."
+                    }
+                };
+
+            }
+
+            // Invalid method
+            return {
+                status: 405,
+                jsonBody: {
+                    message: "Method not allowed."
                 }
+            };
+
+        }
         // Catch any unexpected errors
         catch (error) {
             
