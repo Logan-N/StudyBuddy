@@ -84,95 +84,196 @@ app.http("Account", {
                     jsonBody: result.recordset[0]
                 };
             }
-            // Handle POST request to change password
+            // Handle POST request to change password or email
             if (request.method === "POST") {
 
-
                 // Read JSON body
-                const {
-                    currentPassword,
-                    newPassword
-                } = await request.json();
+                const body = await request.json();
 
-                // Make sure fields are filled
-                if (!currentPassword || !newPassword) {
-                    return {
-                        status: 400,
-                        jsonBody: {
-                            message: "Please fill out all fields."
-                        }
-                    };
-                }
+                // if the body contains a new email, handle the email change
+                if (body.newEmail) {
 
-                // Find the user's current password
-                const result = await connection.request()
-                    .input("userID", sql.Int, userID)
-                    .query(`
-                        SELECT Password
-                        FROM Users
-                        WHERE UserID = @userID
-                    `);
+                    // Destructure the body to get the current password and new email
+                    const { currentPassword, newEmail } = body;
 
-                // If no user is found, return a 404 error
-                if (result.recordset.length === 0) {
-                    return {
-                        status: 404,
-                        jsonBody: {
-                            message: "User not found."
-                        }
-                    };
-                }
-
-                // Compare current password to the hashed password in the database
-                const passwordMatches = await bcrypt.compare(
-                    currentPassword,
-                    result.recordset[0].Password
-                );
-
-                // If the current password does not match, return a 401 error
-                if (!passwordMatches) {
-                    return {
-                        status: 401,
-                        jsonBody: {
-                            message: "Current password is incorrect."
-                        }
-                    };
-                }
-
-                // Hash the new password
-                const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-                // Save the new password
-                await connection.request()
-                    .input("userID", sql.Int, userID)
-                    .input("password", sql.VarChar, hashedPassword)
-                    .query(`
-                        UPDATE Users
-                        SET Password = @password
-                        WHERE UserID = @userID
-                    `);
-                    
-                // Return a success message if the password was changed successfully
-                return {
-                    status: 200,
-                    jsonBody: {
-                        message: "Password changed successfully."
+                    // Make sure fields are filled
+                    if (!currentPassword || !newEmail) {
+                        return {
+                            status: 400,
+                            jsonBody: {
+                                message: "Please fill out all fields."
+                            }
+                        };
                     }
-                };
+
+                    // Find the user's current password
+                    const result = await connection.request()
+                        .input("userID", sql.Int, userID)
+                        .query(`
+                            SELECT Password
+                            FROM Users
+                            WHERE UserID = @userID
+                        `);
+
+                    // If no user is found, return a 404 error
+                    if (result.recordset.length === 0) {
+                        return {
+                            status: 404,
+                            jsonBody: {
+                                message: "User not found."
+                            }
+                        };
+                    }
+
+                    // Compare current password to the hashed password in the database
+                    const passwordMatches = await bcrypt.compare(
+                        currentPassword,
+                        result.recordset[0].Password
+                    );
+
+                    // If the current password does not match, return a 401 error
+                    if (!passwordMatches) {
+                        return {
+                            status: 401,
+                            jsonBody: {
+                                message: "Current password is incorrect."
+                            }
+                        };
+                    }
+
+                    // Make sure no other account is already using this email
+                    const emailCheck = await connection.request()
+                        .input("newEmail", sql.VarChar, newEmail)
+                        .input("userID", sql.Int, userID)
+                        .query(`
+                            SELECT UserID
+                            FROM Users
+                            WHERE Email = @newEmail AND UserID != @userID
+                        `);
+                        
+                    // If the email is already in use, return a 409 error
+                    if (emailCheck.recordset.length > 0) {
+                        return {
+                            status: 409,
+                            jsonBody: {
+                                message: "That email is already in use."
+                            }
+                        };
+                    }
+
+                    // Save the new email
+                    await connection.request()
+                        .input("userID", sql.Int, userID)
+                        .input("newEmail", sql.VarChar, newEmail)
+                        .query(`
+                            UPDATE Users
+                            SET Email = @newEmail
+                            WHERE UserID = @userID
+                        `);
+
+                    // Return a success message if the email was changed successfully
+                    return {
+                        status: 200,
+                        jsonBody: {
+                            message: "Email changed successfully."
+                        }
+                    };
+                }
             }
 
-            // Invalid method
-            return {
-                status: 405,
-                jsonBody: {
-                    message: "Method not allowed."
-                }
-            };
+                // if the body contains a new password, handle the password change
+                if (body.newPassword) {
 
-        }
+                    // Destructure the body to get the current password and new password
+                    const 
+                    {
+                        currentPassword,
+                        newPassword
+                    } = body;
+
+                    // Make sure fields are filled
+                    if (!currentPassword || !newPassword) 
+                    {
+                        return {
+                            status: 400,
+                            jsonBody: {
+                                message: "Please fill out all fields."
+                            }
+                        };
+                    }
+
+                    // Find the user's current password
+                    const result = await connection.request()
+                        .input("userID", sql.Int, userID)
+                        .query(`
+                            SELECT Password
+                            FROM Users
+                            WHERE UserID = @userID
+                        `);
+
+                    // If no user is found, return a 404 error
+                    if (result.recordset.length === 0) 
+                    {
+                        return {
+                            status: 404,
+                            jsonBody: {
+                                message: "User not found."
+                            }
+                        };
+                    }
+
+                    // Compare current password to the hashed password in the database
+                    const passwordMatches = await bcrypt.compare(
+                    currentPassword,
+                    result.recordset[0].Password
+                    );
+
+                    // If the current password does not match, return a 401 error
+                    if (!passwordMatches) 
+                    {
+                        return {
+                            status: 401,
+                            jsonBody: {
+                                message: "Current password is incorrect."
+                            }
+                        };
+                    };
+                
+
+                    // Hash the new password
+                    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+                    // Save the new password
+                    await connection.request()
+                        .input("userID", sql.Int, userID)
+                        .input("password", sql.VarChar, hashedPassword)
+                        .query(`
+                            UPDATE Users
+                            SET Password = @password
+                            WHERE UserID = @userID
+                        `);
+                    
+                    // Return a success message if the password was changed successfully
+                    return {
+                        status: 200,
+                        jsonBody: {
+                            message: "Password changed successfully."
+                        }
+                    };
+                }
+
+                    // if the body does not contain a new email or new password, return a 400 error
+                    return {
+                        status: 405,
+                        jsonBody: {
+                            message: "Method not allowed."
+                        }
+                    };
+                
+                }
         // Catch any unexpected errors
         catch (error) {
-
+            
             console.error(error);
 
             return {
