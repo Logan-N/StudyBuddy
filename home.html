@@ -181,12 +181,18 @@
       function renderEvents() {
         plannerList.innerHTML = '';
 
-        if (events.length === 0) {
-          plannerList.innerHTML = '<div class="small">No events yet.</div>';
+        // Filter events to only show upcoming events
+        const todayStr = new Date().toISOString().split("T")[0];
+        const upcomingEvents = events.filter((ev) => ev.date >= todayStr);
+
+        // if no upcoming events, display a message and render the calendar
+        if (upcomingEvents.length === 0) 
+        {
+          plannerList.innerHTML = '<div class="small">No upcoming events.</div>';
           return;
         }
-
-        events.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach((ev) => {
+        // Sort the upcoming events by date and render them in the planner list
+        upcomingEvents.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach((ev) => {
         const div = document.createElement('div');
         div.className = 'event-card';
         div.innerHTML = `
