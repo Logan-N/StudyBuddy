@@ -322,10 +322,15 @@
         day: 'numeric'
       });
     }
-
+    
     //Exports the events in the planner to a text file.
     exportPlanner.addEventListener('click', () => {
+      //Gets Current Datee
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      //Exports only Upcoming Events
       const lines = events
+        .filter((ev) => ev.date >= todayStr)
         .slice()
         .sort((a, b) => a.date.localeCompare(b.date))
         .map((ev) => {
