@@ -38,7 +38,7 @@ app.http("Register", {
                 );
 
             //If username or email already exists, return a 400 status code and an error message
-            if (existingUser.length > 0) {
+            if (existingUser.recordset.length > 0) {
                 return {
                     status: 400,
                     jsonBody: {
