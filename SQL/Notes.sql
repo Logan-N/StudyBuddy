@@ -1,7 +1,0 @@
-Create Table Notes (
-	NoteID INT Primary Key,
-	UserID INT,
-	UploadDate DATETIME,
-	FilePath Varchar(255),
-	Foreign Key (UserID) References User(UserID)
-);
