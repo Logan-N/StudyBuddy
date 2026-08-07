@@ -93,6 +93,15 @@ const userId = decoded.userID;
               }
         };
       }
+     // NEW: validate that end time isn't before start time
+     if (startTime && endTime && endTime < startTime) {
+        return {
+          status: 400,
+          jsonBody: {
+            message: "End time cannot be before start time."
+          }
+        };
+      }
 // look up planner using userID
       const plannerResult = await pool.request()
         .input("userId", sql.Int, userId)
