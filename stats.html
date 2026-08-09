@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+  <title>Study Buddy - Stats</title>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Study Buddy</h1>
+      <nav>
+        <a href="home.html">Home</a>
+        <a href="quiz.html">Quiz</a>
+        <a href="planner.html">Planner</a>
+        <a href="account.html">Account</a>
+        <a class="active" href="stats.html">Stats</a>
+      </nav>
+    </header>
+
+    <h2 class="page-title">StudyBuddy Stats</h2>
+
+    <div class="layout">
+
+      <section class="card">
+        <h3>User Generated Quizzes Breakdown</h3>
+        <label for="monthPicker">Month</label>
+        <input id="monthPicker" type="month">
+
+        <div id="quizTypeList" class="small" style="margin-top:12px;">
+          Loading...
+        </div>
+      </section>
+
+      <aside class="card">
+        <h3>Active User Count</h3>
+        <p class="small">
+          Users who made a quiz, took a quiz, or added a planner event this month.
+        </p>
+        <p id="activeUsersCount" style="font-size:2rem; font-weight:700; margin-top:8px;">
+          -
+        </p>
+      </aside>
+
+    </div>
+  </div>
+
+  <script>
+    // grab the elements we need to display stats in
+    const monthPicker = document.getElementById("monthPicker");
+    const quizTypeList = document.getElementById("quizTypeList");
+    const activeUsersCount = document.getElementById("activeUsersCount");
+
+    // start the picker on the current month
+    const now = new Date();
+    monthPicker.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    // grabs stats for whatever month is picked and displays them
+    async function loadStats() 
+    {
+        const [year, month] = monthPicker.value.split("-").map(Number);
+    
+        quizTypeList.textContent = "Loading...";
+        activeUsersCount.textContent = "-";
+        // fetch the stats from the API
+        try {
+            const response = await fetch(`/api/Stats?year=${year}&month=${month}`);
+            const result = await response.json();
+
+        // check if the response was successful, if not throw an error
+        if (!response.ok) 
+        {
+            throw new Error(result.error || "Something went wrong.");
+        }
+
+        // render the quiz type breakdown and active user count
+        renderQuizTypes(result.quizTypeBreakdown, result.totalQuizzes);
+        activeUsersCount.textContent = result.activeUsers;
+      } 
+        // Returns error if stats fail to load
+        catch (error) {
+            console.error(error);
+            quizTypeList.textContent = "Failed to load stats.";
+        }
+    }
+
+    // shows each quiz type as a label, percentage, and a little bar
+    function renderQuizTypes(breakdown, totalQuizzes) {
+        if (!breakdown || breakdown.length === 0 || totalQuizzes === 0) 
+        {
+            quizTypeList.innerHTML = '<div class="small">No quizzes made this month.</div>';
+            return;
+        }
+        // calculate the percentage for each quiz type
+        quizTypeList.innerHTML = breakdown
+            .map((row) => `
+            <div style="margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between;">
+                <span>${row.label}</span>
+                <span>${row.percentage}% (${row.count})</span>
+                </div>
+                <div style="background:#e2e8f0; border-radius:6px; height:8px; margin-top:4px;">
+                <div style="background:#2563eb; width:${row.percentage}%; height:8px; border-radius:6px;"></div>
+                </div>
+            </div>
+        `)
+        .join("");
+    }
+    // add an event listener to the month picker to load stats whenever the month changes
+    monthPicker.addEventListener("change", loadStats);
+
+    // load the stats for the initial month when the page loads
+    loadStats();
+  </script>
+</body>
+</html>
